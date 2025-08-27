@@ -16,6 +16,7 @@ return new class extends Migration
         $table->string('nombre', 80)->unique();           // UNIQUE, NOT NULL
         $table->decimal('precio', 10, 2);                 // NOT NULL
         $table->string('descripcion', 200)->nullable();   // NULL
+        $table->timestamps();
 
         // Opcional:
         // $table->check('precio >= 0');

@@ -13,16 +13,17 @@ return new class extends Migration
     {
         Schema::create('historial_reserva', function (Blueprint $table) {
             $table->id('id_hist_res');                // INT PK
-        $table->integer('id_reserva');                    // INT NOT NULL (FK futura)
-        $table->integer('id_usuario');                    // INT NOT NULL (FK futura)
+        $table->unsignedBigInteger('id_reserva');                    // INT NOT NULL (FK futura)
+        $table->unsignedBigInteger('id_usuario');                    // INT NOT NULL (FK futura)
         $table->string('campo', 80);                      // NOT NULL
         $table->string('valor_anterior', 300)->nullable();
         $table->string('valor_nuevo', 300)->nullable();
         $table->string('motivo', 200)->nullable();
-        $table->dateTime('timestamp');                    // NOT NULL
+        $table->dateTime('fecha');                    // NOT NULL
 
         $table->index('id_reserva');
         $table->index('id_usuario');
+        $table->timestamps();
         });
     }
 

@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('penalidad_tipo', 20);             // NOT NULL (ej: monto, porcentaje, no_show_noche)
             $table->decimal('penalidad_valor', 10, 2);        // NOT NULL (>= 0)
             $table->string('descripcion', 200)->nullable();   // NULL
+            $table->timestamps();
 
             // Opcional: si usas MySQL 8+, podrías activar CHECKs
             // $table->check("penalidad_tipo IN ('monto','porcentaje','no_show_noche')");
