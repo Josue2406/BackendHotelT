@@ -13,16 +13,17 @@ return new class extends Migration
     {
         Schema::create('reserva_pago', function (Blueprint $table) {
             $table->id('id_reserva_pago');            // INT PK
-        $table->integer('id_reserva');                    // INT NOT NULL (FK futura)
+        $table->unsignedBigInteger('id_reserva');                    // INT NOT NULL (FK futura)
         $table->string('tipo', 20);                       // PREPAGO | ANTICIPO | PENALIDAD | DEVOLUCION
-        $table->string('metodo', 20);                     // TARJETA | EFECTIVO | TRANSFER | OTRO
+        //$table->string('metodo', 20);                     // TARJETA | EFECTIVO | TRANSFER | OTRO
         //$table->integer('id_moneda');                     // INT NOT NULL (FK futura)
-        $table->decimal('monto', 14, 2);                  // NOT NULL
+        $table->decimal('monto', 10, 2);                  // NOT NULL
         $table->string('estado', 20);                     // AUTORIZADO | CAPTURADO | CONFIRMADO | ANULADO
         $table->dateTime('fecha_pago');                   // NOT NULL
-        $table->integer('creado_por');                    // id_cliente (o usuario) NOT NULL
+        $table->unsignedBigInteger('creado_por');                    // id_cliente (o usuario) NOT NULL
 
         $table->index('id_reserva');
+        $table->timestamps();
          //$table->index('id_moneda'); Consultar si es necesario
 
         // Opcional: checks si tu MySQL 8+ los respalda

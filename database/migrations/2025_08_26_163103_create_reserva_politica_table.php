@@ -13,13 +13,14 @@ return new class extends Migration
     {
         Schema::create('reserva_politica', function (Blueprint $table) {
             $table->id('id_reserva_Politica');   // INT PK (AI)
-            $table->integer('id_politica');              // INT (FK futura a politica_cancelacion)
-            $table->integer('id_reserva');               // INT (FK futura a reserva)
+            $table->unsignedBigInteger('id_politica');              // INT (FK futura a politica_cancelacion)
+            $table->unsignedBigInteger('id_reserva');               // INT (FK futura a reserva)
             $table->string('motivo', 200)->nullable();   // NULL
 
             // índices para búsquedas (opcional, sin FKs)
             $table->index('id_politica');
             $table->index('id_reserva');
+            $table->timestamps();
         });
     }
 

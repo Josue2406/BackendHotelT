@@ -12,11 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('tarifas', function (Blueprint $table) {
-            $table->unsignedBigInteger('id_tipo_habitacion')->after('id')->nullable();
-            $table->unsignedBigInteger('id_temporada')->after('id')->nullable();
+            $table->unsignedBigInteger('id_tipo_habitacion')->after('id_tarifa')->nullable();
+            $table->unsignedBigInteger('id_temporada')->after('id_tipo_habitacion')->nullable();
 
             // Única por combinación (opcional pero recomendado)
-            $table->unique(['id_tipo_habitacion', 'id_temporada'], 'uq_tarifa_tipo_temporada');
+            //$table->unique(['id_tipo_habitacion', 'id_temporada'], 'uq_tarifa_tipo_temporada');
 
             // FK a tipos_habitacion (ajusta PK si es 'id')
             $table->foreign('id_tipo_habitacion', 'fk_tarifa_tipo_hab')
