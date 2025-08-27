@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('estado_reserva', function (Blueprint $table) {
             $table->id('id_estado_res');            // INT PK
         $table->string('nombre', 20)->unique();         // UNIQUE, NOT NULL
-        // sin timestamps
+        $table->timestamps();
         });
     }
 

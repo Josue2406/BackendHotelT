@@ -13,12 +13,13 @@ return new class extends Migration
     {
         Schema::create('cargo_reserva', function (Blueprint $table) {
             $table->id('id_cargo');                  // INT PK (AI)
-            $table->integer('id_reserva_pago');              // INT (FK futura)
+            $table->unsignedBigInteger('id_reserva_pago');              // INT (FK futura)
             $table->string('tipo_cargo', 50);                // cambio habitación, cancela reserva, etc.
             $table->decimal('monto', 10, 2);                 // decimal NOT NULL
-            $table->timestamp('fecha')->useCurrent();        // fecha del cargo (por defecto NOW())
+            $table->dateTime('fecha')->useCurrent();        // fecha del cargo (por defecto NOW())
 
             $table->index('id_reserva_pago');                // índice opcional
+            $table->timestamps();
         });
         
     }

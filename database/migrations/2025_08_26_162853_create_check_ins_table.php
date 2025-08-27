@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('check_ins', function (Blueprint $table) {
             $table->id('id_checkin');
             $table->dateTime('fecha_hora');
-            $table->string('obervacion', 30);
+            $table->string('obervacion', 300);
             $table->timestamps();
         });
     }

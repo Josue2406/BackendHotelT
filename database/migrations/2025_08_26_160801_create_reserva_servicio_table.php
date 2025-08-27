@@ -13,14 +13,15 @@ return new class extends Migration
     {
         Schema::create('reserva_servicio', function (Blueprint $table) {
             $table->id('id_reserva_serv');            // INT PK
-        $table->integer('id_reserva');                    // INT NOT NULL (FK futura)
-        $table->integer('id_servicio');                   // INT NOT NULL (FK futura)
+        $table->unsignedBigInteger('id_reserva');                    // INT NOT NULL (FK futura)
+        $table->unsignedBigInteger('id_servicio');                   // INT NOT NULL (FK futura)
         $table->integer('cantidad');                      // NOT NULL, > 0
         $table->decimal('precio_unitario', 10, 2);        // NOT NULL, >= 0
         $table->string('descripcion', 200)->nullable();   // NULL
 
         $table->index('id_reserva');
         $table->index('id_servicio');
+        $table->timestamps();
 
         // Si cada servicio debe ser único por reserva, habilita:
         $table->unique(['id_reserva','id_servicio'], 'uq_reserva_servicio');
