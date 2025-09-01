@@ -16,7 +16,7 @@ return new class extends Migration
         $table->unsignedBigInteger('id_cliente');                    // INT NOT NULL (FK futura)
         $table->unsignedBigInteger('id_estado_res');                 // INT NOT NULL (FK futura)
         $table->dateTime('fecha_creacion');               // NOT NULL
-        $table->string('fuente', 20);                     // NOT NULL (web | frontdesk)
+        //$table->string('fuente', 20);                     // NOT NULL (web | frontdesk)
         $table->decimal('total_monto_reserva', 10, 2);           // NOT NULL
         $table->string('notas', 300)->nullable();         // NULL
         $table->timestamps();

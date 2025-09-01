@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('reserva', function (Blueprint $table) {
             // Cambiar la columna 'id_fuente' de tipo VARCHAR a unsignedBigInteger
-            $table->unsignedBigInteger('id_fuente')->nullable()->change();  // Permite valores NULL
+            $table->unsignedBigInteger('id_fuente')->nullable();  // Permite valores NULL
 
             // Crear la clave foránea para 'id_fuente' que apunte a 'fuentes'
             $table->foreign('id_fuente')->references('id_fuente')->on('fuentes')->onDelete('set null');

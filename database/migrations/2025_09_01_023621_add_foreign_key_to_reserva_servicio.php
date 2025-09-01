@@ -17,6 +17,11 @@ return new class extends Migration
                   ->references('id_reserva')
                   ->on('reserva')
                   ->onDelete('cascade'); // Acción cuando se elimina una reserva
+                  
+                  $table->foreign('id_servicio')
+                  ->references('id_servicio')
+                  ->on('servicio')
+                  ->onDelete('cascade');
         });
     }
 
@@ -28,6 +33,7 @@ return new class extends Migration
         Schema::table('reserva_servicio', function (Blueprint $table) {
             // Eliminar la clave foránea
             $table->dropForeign(['id_reserva']);
+            $table->dropForeign(['id_servicio']);
         });
     }
 };

@@ -8,7 +8,7 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('fuentes', function (Blueprint $table) {
-            $table->bigIncrements('id_fuente');    // PK personalizada
+            $table->id('id_fuente');    // PK personalizada
             $table->string('nombre', 100)->unique();
             $table->timestamps();
             $table->softDeletes();
