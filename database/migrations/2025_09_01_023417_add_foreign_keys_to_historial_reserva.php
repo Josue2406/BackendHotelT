@@ -21,7 +21,7 @@ return new class extends Migration
             // Crear la clave foránea para 'id_usuario' que apunta a 'usuarios'
             $table->foreign('id_usuario')
                   ->references('id_usuario')
-                  ->on('usuarios')
+                  ->on('users')
                   ->onDelete('cascade'); // Acción cuando se elimina un usuario
         });
     }

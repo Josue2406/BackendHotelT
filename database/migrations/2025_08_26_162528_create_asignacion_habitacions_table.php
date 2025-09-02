@@ -16,9 +16,12 @@ return new class extends Migration
             //$table->unsignedBigInteger('id_hab');
             //$table->unsignedBigInteger('id_reserva');
 
-            $table->string('origen', 30)->unique();
-            $table->string('nombre', 30)->unique();
+            $table->string('origen', 30);
+            $table->string('nombre', 30);
             $table->dateTime('fecha_asignacion');
+            $table->unsignedInteger('adultos');
+            $table->unsignedInteger('ninos');
+            $table->unsignedInteger('bebes');
 
             $table->timestamps();
         });

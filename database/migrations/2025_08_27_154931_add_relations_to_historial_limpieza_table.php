@@ -27,7 +27,7 @@ return new class extends Migration
                 ->restrictOnDelete();
 
             $table->foreign('actor_id', 'fk_hist_limp_actor')
-                ->references('id_usuario')->on('usuarios')
+                ->references('id_usuario')->on('users')
                 ->cascadeOnUpdate()
                 ->restrictOnDelete();
         });
