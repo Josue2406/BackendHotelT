@@ -10,8 +10,8 @@ return new class extends Migration {
             $table->id();
             $table->string('nombre', 80)->unique();
             $table->string('codigo', 20)->unique();            // EJ: STD, DLX, STE
-            $table->unsignedTinyInteger('capacidad')->default(1);
-            $table->decimal('tarifa_base', 10, 2)->default(0); // tarifa por noche
+            //$table->unsignedTinyInteger('capacidad')->default(1);
+            //$table->decimal('tarifa_base', 10, 2)->default(0); // tarifa por noche
             $table->json('amenidades')->nullable();            // JSON: ["wifi","tv","ac"]
             $table->text('descripcion')->nullable();
             $table->timestamps();

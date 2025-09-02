@@ -12,17 +12,20 @@ return new class extends Migration {
                   ->constrained('tipos_habitacion')
                   ->cascadeOnUpdate()
                   ->restrictOnDelete();
-
+            $table->string('nombre', 50)->unique();
             $table->string('numero', 20)->unique();   // EJ: 101, 3B
             $table->unsignedSmallInteger('piso')->default(1);
-            $table->enum('estado', ['disponible','ocupada','sucia','mantenimiento','bloqueada'])
-                  ->default('disponible');
-            $table->decimal('tarifa_noche', 10, 2)->nullable(); // si no se define, usar tarifa del tipo
-            $table->boolean('habilitada')->default(true);       // para ventas
+            // $table->enum('estado', ['disponible','ocupada','sucia','mantenimiento','bloqueada'])
+            //     ->default('disponible');
+            //$table->decimal('tarifa_noche', 10, 2)->nullable(); // si no se define, usar tarifa del tipo
+            //$table->boolean('habilitada')->default(true);       // para ventas
+            $table->unsignedInteger('capacidad');
+            $table->string('medida');
+            $table->string('descripcion');
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index(['tipo_habitacion_id','estado']);
+            $table->index(['tipo_habitacion_id','numero']);
         });
     }
 

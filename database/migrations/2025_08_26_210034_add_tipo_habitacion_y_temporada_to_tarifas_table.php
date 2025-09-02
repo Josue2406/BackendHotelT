@@ -20,7 +20,7 @@ return new class extends Migration
 
             // FK a tipos_habitacion (ajusta PK si es 'id')
             $table->foreign('id_tipo_habitacion', 'fk_tarifa_tipo_hab')
-                ->references('id')->on('tipos_habitacion')
+                ->references('id')->on('habitaciones')
                 ->cascadeOnUpdate()
                 ->restrictOnDelete();
 

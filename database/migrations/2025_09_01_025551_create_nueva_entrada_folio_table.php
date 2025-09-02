@@ -41,7 +41,7 @@ return new class extends Migration
 
             $table->foreign('id_usuario')
                   ->references('id_usuario')
-                  ->on('usuarios')  // Relación con la tabla usuarios
+                  ->on('users')  // Relación con la tabla usuarios
                   ->onDelete('cascade'); // Acción al eliminar un usuario
         });
     }

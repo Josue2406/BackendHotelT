@@ -23,12 +23,12 @@ return new class extends Migration
 
             // FKs
             $table->foreign('id_usuario_asigna', 'fk_mant_us_asigna')
-                ->references('id_usuario')->on('usuarios')
+                ->references('id_usuario')->on('users')
                 ->cascadeOnUpdate()
                 ->restrictOnDelete();
 
             $table->foreign('id_usuario_reporta', 'fk_mant_us_reporta')
-                ->references('id_usuario')->on('usuarios')
+                ->references('id_usuario')->on('users')
                 ->cascadeOnUpdate()
                 ->restrictOnDelete();
 
