@@ -19,6 +19,9 @@ return new class extends Migration
         //$table->string('fuente', 20);                     // NOT NULL (web | frontdesk)
         $table->decimal('total_monto_reserva', 10, 2);           // NOT NULL
         $table->string('notas', 300)->nullable();         // NULL
+        $table->unsignedInteger('adultos');
+        $table->unsignedInteger('ninos');
+        $table->unsignedInteger('bebes');
         $table->timestamps();
 
         // índices opcionales (sin FK):

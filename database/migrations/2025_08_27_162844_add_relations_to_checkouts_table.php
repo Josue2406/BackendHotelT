@@ -12,14 +12,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('check_outs', function (Blueprint $table) {
-            $table->unsignedBigInteger('id_reserva')->after('id_checkout')->nullable();
+            $table->unsignedBigInteger('id_asignacion')->after('id_checkout')->nullable();
 
             // Índice
-            $table->index('id_reserva', 'idx_checkout_reserva');
+            $table->index('id_asignacion', 'idx_checkout_asignacion');
 
             // Relación con reservas
-            $table->foreign('id_reserva', 'fk_checkout_reserva')
-                ->references('id_reserva')->on('reserva')
+            $table->foreign('id_asignacion', 'fk_checkout_asignacion')
+                ->references('id_asignacion')->on('asignacion_habitacions')
                 ->cascadeOnUpdate()
                 ->restrictOnDelete();
 
@@ -32,9 +32,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('checkouts', function (Blueprint $table) {
-            $table->dropForeign('fk_checkout_reserva');
-            $table->dropIndex('idx_checkout_reserva');
-            $table->dropColumn('id_reserva');
+            $table->dropForeign('fk_checkout_asignacion');
+            $table->dropIndex('idx_checkout_asignacion');
+            $table->dropColumn('id_asignacion');
         });
     }
 };

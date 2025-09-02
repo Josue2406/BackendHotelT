@@ -27,7 +27,7 @@ return new class extends Migration
 
             // FK a usuarios
             $table->foreign('actor_id', 'fk_hist_mant_actor')
-                ->references('id_usuario')->on('usuarios')
+                ->references('id_usuario')->on('users')
                 ->cascadeOnUpdate()
                 ->restrictOnDelete();
         });
