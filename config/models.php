@@ -372,7 +372,7 @@ return [
         |                       generates Post::user() and User::posts()
         */
 
-        // 'relation_name_strategy' => 'related',
+        //'relation_name_strategy' => 'related',
         'relation_name_strategy' => 'foreign_key',
 
         /*
