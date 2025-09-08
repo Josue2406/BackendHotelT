@@ -11,7 +11,7 @@ return new class extends Migration {
             $table->unsignedBigInteger('id_estado_hab');
             $table->unsignedBigInteger('tipo_habitacion_id');
             $table->string('nombre', 50)->unique();
-            $table->string('numero', 20)->unique();
+            $table->string('numero', 20);
             $table->smallInteger('piso')->default(1);
             $table->integer('capacidad');
             $table->string('medida', 255);

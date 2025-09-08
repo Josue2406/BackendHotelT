@@ -15,9 +15,12 @@ return new class extends Migration {
             $table->string('email', 120)->unique();
             $table->string('password', 255);
             $table->string('telefono', 60)->nullable();
+            // $table->unsignedBigInteger('id_tipo_doc')();
+            // $table->string('numero_doc', 40)();
             $table->timestamps();
 
             $table->foreign('id_rol')->references('id_rol')->on('rols')->cascadeOnUpdate()->restrictOnDelete();
+            // $table->foreign('id_tipo_doc')->references('id_tipo_doc')->on('tipo_doc')->nullOnDelete()->cascadeOnUpdate();
         });
     }
 
