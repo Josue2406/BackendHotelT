@@ -1,5 +1,5 @@
 <?php
-namespace App\Http\Requests;
+namespace App\Http\Requests\clientes;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreClienteRequest extends FormRequest {

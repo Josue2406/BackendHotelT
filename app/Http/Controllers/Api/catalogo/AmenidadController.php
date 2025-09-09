@@ -2,8 +2,8 @@
 namespace App\Http\Controllers\Api\catalogo;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreAmenidadRequest;
-use App\Http\Requests\UpdateAmenidadRequest;
+use App\Http\Requests\catalogo\StoreAmenidadRequest;
+use App\Http\Requests\catalogo\UpdateAmenidadRequest;
 use App\Models\habitacion\Amenidad;
 
 class AmenidadController extends Controller

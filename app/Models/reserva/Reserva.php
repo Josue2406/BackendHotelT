@@ -10,6 +10,17 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 
+use App\Models\cliente\Cliente;
+use App\Models\reserva\EstadoReserva;
+use App\Models\estadia\Fuente;
+use App\Models\reserva\ReservaHabitacion;
+use App\Models\reserva\ReservaPolitica;
+use App\Models\reserva\ReservaPago;
+use App\Models\check_in\AsignacionHabitacion;
+use App\Models\estadia\Estadia;   // revisa el nombre real de la clase
+use App\Models\reserva\Servicio;
+
+
 /**
  * Class Reserva
  * 
@@ -109,4 +120,46 @@ class Reserva extends Model
 					->withPivot('id_reserva_serv', 'cantidad', 'precio_unitario', 'descripcion')
 					->withTimestamps();
 	}
+
+	// Alias legibles para usar en with(), load(), etc.
+public function cliente()
+{
+    return $this->id_cliente();
+}
+
+public function estado()
+{
+    return $this->id_estado_res();
+}
+
+public function fuente()
+{
+    return $this->id_fuente();
+}
+
+public function habitaciones()
+{
+    return $this->reserva_habitacions_where_id_reserva();
+}
+
+public function politicas()
+{
+    return $this->reserva_politicas_where_id_reserva();
+}
+
+public function pagos()
+{
+    return $this->reserva_pagos_where_id_reserva();
+}
+
+public function asignaciones()
+{
+    return $this->asignacion_habitacions_where_id_reserva();
+}
+
+public function estadias()
+{
+    return $this->estadia_where_id_reserva();
+}
+
 }

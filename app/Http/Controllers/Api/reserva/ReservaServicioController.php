@@ -2,9 +2,9 @@
 namespace App\Http\Controllers\Api\reserva;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\AddReservaServicioRequest;
-use App\Models\Reserva;
-use App\Models\ReservaServicio;
+use App\Http\Requests\reserva\AddReservaServicioRequest;
+use App\Models\reserva\Reserva;
+use App\Models\reserva\ReservaServicio;
 
 class ReservaServicioController extends Controller
 {

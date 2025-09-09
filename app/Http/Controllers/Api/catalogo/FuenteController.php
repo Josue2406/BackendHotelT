@@ -2,9 +2,9 @@
 namespace App\Http\Controllers\Api\catalogo;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreFuenteRequest;
-use App\Http\Requests\UpdateFuenteRequest;
-use App\Models\Fuente;
+use App\Http\Requests\catalogo\StoreFuenteRequest;
+use App\Http\Requests\catalogo\UpdateFuenteRequest;
+use App\Models\estadia\Fuente;
 
 class FuenteController extends Controller
 {

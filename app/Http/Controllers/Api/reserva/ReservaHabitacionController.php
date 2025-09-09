@@ -2,13 +2,13 @@
 namespace App\Http\Controllers\Api\reserva;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\AddReservaHabitacionRequest;
-use App\Models\Reserva;
-use App\Models\ReservaHabitacione;
-use App\Models\Habitacione;
-use App\Models\ReservaServicio;
-use App\Models\HabBloqueoOperativo;
-use App\Models\AsignacionHabitacione;
+use App\Http\Requests\reserva\AddReservaHabitacionRequest;
+use App\Models\reserva\Reserva;
+use App\Models\reserva\ReservaHabitacion;
+use App\Models\reserva\Habitacione;
+use App\Models\reserva\ReservaServicio;
+use App\Models\house_keeping\HabBloqueoOperativo;
+use App\Models\check_in\AsignacionHabitacion;
 
 class ReservaHabitacionController extends Controller
 {
@@ -23,12 +23,12 @@ class ReservaHabitacionController extends Controller
         $desde = $data['fecha_llegada'];
         $hasta = $data['fecha_salida'];
 
-        $choqueReserva = ReservaHabitacione::where('id_habitacion',$data['id_habitacion'])
+        $choqueReserva = ReservaHabitacion::where('id_habitacion',$data['id_habitacion'])
             ->where('fecha_llegada','<',$hasta)
             ->where('fecha_salida','>',$desde)
             ->exists();
 
-        $choqueAsign = AsignacionHabitacione::where('id_hab',$data['id_habitacion'])
+        $choqueAsign = AsignacionHabitacion::where('id_hab',$data['id_habitacion'])
             ->where('fecha_asignacion','<',$hasta) // si guardas checkout, filtra asignaciones activas
             ->exists();
 

@@ -2,9 +2,9 @@
 namespace App\Http\Controllers\Api\habitaciones;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreHabitacionRequest;
-use App\Http\Requests\UpdateHabitacionRequest;
-use App\Models\Habitacione;
+use App\Http\Requests\habitaciones\StoreHabitacionRequest;
+use App\Http\Requests\habitaciones\UpdateHabitacionRequest;
+use App\Models\habitacion\Habitacione;
 
 class HabitacionController extends Controller
 {
