@@ -8,35 +8,35 @@ return new class extends Migration {
     public function up(): void {
         Schema::create('estado_folio', function (Blueprint $table) {
             $table->bigIncrements('id_estado_folio');
-            $table->string('nombre', 100);
+            $table->string('nombre', 100)->unique();
             $table->string('descripcion', 255)->nullable();
             $table->timestamps();
         });
 
         Schema::create('tipo_entrada', function (Blueprint $table) {
             $table->bigIncrements('id_tipo_entrada_folio');
-            $table->string('nombre', 100);
+            $table->string('nombre', 100)->unique();
             $table->string('descripcion', 255)->nullable();
             $table->timestamps();
         });
 
         Schema::create('tipo_concepto', function (Blueprint $table) {
             $table->bigIncrements('id_tipo_concepto_folio');
-            $table->string('nombre', 100);
+            $table->string('nombre', 100)->unique();
             $table->string('descripcion', 255)->nullable();
             $table->timestamps();
         });
 
         Schema::create('tipo_transaccion', function (Blueprint $table) {
             $table->bigIncrements('id_tipo_transaccion');
-            $table->string('nombre', 100);
+            $table->string('nombre', 100)->unique();
             $table->string('descripcion', 255)->nullable();
             $table->timestamps();
         });
 
         Schema::create('estado_credito', function (Blueprint $table) {
             $table->bigIncrements('id_estado_credito');
-            $table->string('nombre', 100);
+            $table->string('nombre', 100)->unique();
             $table->string('descripcion', 255)->nullable();
             $table->timestamps();
         });
@@ -65,20 +65,18 @@ return new class extends Migration {
 
         Schema::create('tipo_doc', function (Blueprint $table) {
             $table->bigIncrements('id_tipo_doc');
-            $table->string('nombre', 50);
+            $table->string('nombre', 50)->unique();
         });
 
-        Schema::create('pais', function (Blueprint $table) {
-            $table->bigIncrements('id_pais');
-            $table->string('codigo_iso2', 2);
-            $table->string('codigo_iso3', 3);
-            $table->string('nombre', 100);
-        });
+        // Schema::create('genero', function (Blueprint $table) {
+        //     $table->bigIncrements('id_genero');
+        //     $table->string('nombre', 100);
+        // });
 
         Schema::create('estado_estadia', function (Blueprint $table) {
             $table->bigIncrements('id_estado_estadia');
-            $table->string('codigo', 5);
-            $table->string('nombre', 100);
+            $table->string('codigo', 5)->unique();
+            $table->string('nombre', 100)->unique();
         });
     }
 

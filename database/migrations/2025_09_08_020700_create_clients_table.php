@@ -14,13 +14,14 @@ return new class extends Migration {
             $table->string('email', 50)->unique();
             $table->string('telefono', 50)->unique();
             $table->unsignedBigInteger('id_tipo_doc')->nullable();
-            $table->string('numero_doc', 40)->nullable();
-            $table->unsignedBigInteger('id_pais')->nullable();
+          $table->string('numero_doc', 40)->nullable();
+            $table->string('nacionalidad', 60);
             $table->string('direccion', 200)->nullable();
+            $table->date('fecha_nacimiento', 40)->nullable();
+            $table->string('genero')->nullable();
             $table->timestamps();
 
             $table->foreign('id_tipo_doc')->references('id_tipo_doc')->on('tipo_doc')->nullOnDelete()->cascadeOnUpdate();
-            $table->foreign('id_pais')->references('id_pais')->on('pais')->nullOnDelete()->cascadeOnUpdate();
         });
     }
 

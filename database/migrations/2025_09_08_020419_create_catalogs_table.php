@@ -9,7 +9,7 @@ return new class extends Migration {
         // rols
         Schema::create('rols', function (Blueprint $table) {
             $table->bigIncrements('id_rol');
-            $table->string('nombre', 50);
+            $table->string('nombre', 50)->unique();
             $table->string('descripcion', 250);
             $table->timestamps();
         });
@@ -34,7 +34,7 @@ return new class extends Migration {
         Schema::create('amenidads', function (Blueprint $table) {
             $table->bigIncrements('id_amenidad');
             $table->string('nombre', 60)->unique();
-            $table->string('descripcion', 60);
+            $table->string('descripcion', 60)->nullable();
             $table->timestamps();
         });
 
