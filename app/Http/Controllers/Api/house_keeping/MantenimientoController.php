@@ -6,9 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\house_keeping\StoreMantenimientoRequest;
 use App\Http\Requests\house_keeping\UpdateMantenimientoRequest;
 use App\Http\Resources\house_keeping\MantenimientoResource;
-// Usa el namespace REAL de tu modelo:
-use App\Models\house_keeping\Mantenimiento;                     // <-- si está en App\Models\Mantenimiento
-// use App\Models\house_keeping\Mantenimiento;    // <-- usa esta si tu modelo está en ese subnamespace
+
+use App\Models\house_keeping\Mantenimiento;
+
 use Illuminate\Http\Request;
 
 class MantenimientoController extends Controller
@@ -40,19 +40,23 @@ class MantenimientoController extends Controller
 
     /** POST /mantenimientos */
     public function store(StoreMantenimientoRequest $request)
-    {
-        $data = $request->validated();
+{
+    $data = $request->validated();
 
-        if (!isset($data['id_usuario_reporta']) && auth()->check()) {
-            $data['id_usuario_reporta'] = auth()->id();
-        }
-
-        $mtto = Mantenimiento::create($data);
-
-        return (new MantenimientoResource(
-            $mtto->load(['id_habitacion','id_usuario_asigna','id_usuario_reporta'])
-        ))->response()->setStatusCode(201);
+    // Asignar automáticamente quien reporta si no se especifica
+    if (!isset($data['id_usuario_reporta']) && auth()->check()) {
+        $data['id_usuario_reporta'] = auth()->id();
     }
+
+    // Asignar la fecha de reporte con la hora actual (zona horaria definida en .env)
+    $data['fecha_reporte'] = \Carbon\Carbon::now();
+
+    $mtto = Mantenimiento::create($data);
+
+    return (new MantenimientoResource(
+        $mtto->load(['id_habitacion', 'id_usuario_asigna', 'id_usuario_reporta'])
+    ))->response()->setStatusCode(201);
+}
 
     /** GET /mantenimientos/{mantenimiento} */
     public function show(Mantenimiento $mantenimiento)

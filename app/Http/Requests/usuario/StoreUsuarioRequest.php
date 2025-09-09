@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\usuario;
 
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -9,7 +9,7 @@ class StoreUsuarioRequest extends FormRequest
     public function authorize(): bool { return true; } // sin gates/policies
     public function rules(): array {
         return [
-            'id_rol'    => 'required|exists:rols,id_rol',
+           'id_rol'    => 'nullable|exists:rols,id_rol',
             'nombre'    => 'required|string|max:60',
             'apellido1' => 'required|string|max:60',
             'apellido2' => 'nullable|string|max:60',
