@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Api\usuario;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreUsuarioRequest;
-use App\Http\Requests\UpdateUsuarioRequest;
-use App\Models\User;
+use App\Http\Requests\usuario\StoreUsuarioRequest;
+use App\Http\Requests\usuario\UpdateUsuarioRequest;
+use App\Models\usuario\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Database\QueryException;
 
