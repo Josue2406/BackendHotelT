@@ -4,7 +4,7 @@
  * Created by Reliese Model.
  */
 
-namespace App\Models;
+namespace App\Models\check_out;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;

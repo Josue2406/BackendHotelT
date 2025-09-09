@@ -27,7 +27,7 @@ return new class extends Migration {
         Schema::create('metodo_pago', function (Blueprint $table) {
             $table->bigIncrements('id_metodo_pago');
             $table->unsignedBigInteger('id_moneda');
-            $table->string('nombre', 100);
+            $table->string('nombre', 100)->unique();
             $table->timestamps();
 
             $table->foreign('id_moneda')->references('id_moneda')->on('moneda')->cascadeOnUpdate()->restrictOnDelete();

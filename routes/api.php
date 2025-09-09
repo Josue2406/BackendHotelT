@@ -1,11 +1,63 @@
 
 <?php
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\TipoHabitacionController;
-use App\Http\Controllers\Api\HabitacionController;
+use App\Http\Controllers\Api\usuario\RolController;
+use App\Http\Controllers\Api\usuario\UsuarioController;
 use App\Http\Controllers\Api\house_keeping\LimpiezaController;
 use App\Http\Controllers\Api\house_keeping\MantenimientoController;
-Route::apiResource('tipos-habitacion', TipoHabitacionController::class);
-Route::apiResource('habitaciones', HabitacionController::class);
+use App\Http\Controllers\Api\catalogo\EstadoHabitacionController;
+use App\Http\Controllers\Api\catalogo\TipoHabitacionController;
+use App\Http\Controllers\Api\catalogo\AmenidadController;
+use App\Http\Controllers\Api\catalogo\HabitacionAmenidadController;
+use App\Http\Controllers\Api\catalogo\FuenteController;
+use App\Http\Controllers\Api\catalogo\TipoDocController;
+use App\Http\Controllers\Api\Clientes\ClienteController;
+use App\Http\Controllers\Api\habitaciones\HabitacionController;
+use App\Http\Controllers\Api\habitaciones\BloqueoOperativoController;
+use App\Http\Controllers\Api\habitaciones\DisponibilidadController;
+use App\Http\Controllers\Api\reserva\{
+  ReservaController, ReservaHabitacionController, ReservaServicioController, ReservaPoliticaController
+};
+
 Route::apiResource('limpiezas', LimpiezaController::class);
 Route::apiResource('mantenimientos', MantenimientoController::class);
+Route::apiResource('roles', RolController::class);
+Route::apiResource('usuarios', UsuarioController::class);
+Route::apiResource('estados-habitacion', EstadoHabitacionController::class);
+Route::apiResource('tipos-habitacion', TipoHabitacionController::class);
+Route::apiResource('amenidades', AmenidadController::class);
+Route::apiResource('habitacion-amenidad',HabitacionAmenidadController::class)->only(['index','show','store','destroy']);
+Route::apiResource('fuentes', FuenteController::class);
+Route::apiResource('tipos-doc', TipoDocController::class);
+Route::apiResource('clientes', ClienteController::class);
+Route::apiResource('habitaciones', HabitacionController::class)->only(['index','show','store','update']);
+Route::apiResource('bloqueos', BloqueoOperativoController::class)->only(['index','show','store','destroy']);
+
+Route::get('disponibilidad', DisponibilidadController::class);
+
+
+// CRUD reserva
+Route::apiResource('reservas', ReservaController::class);
+
+// Habitaciones por reserva
+Route::get('reservas/{reserva}/habitaciones',      [ReservaHabitacionController::class, 'index']);
+Route::post('reservas/{reserva}/habitaciones',     [ReservaHabitacionController::class, 'store']);
+Route::delete('reservas/{reserva}/habitaciones/{id}', [ReservaHabitacionController::class, 'destroy']);
+
+// Servicios por reserva
+Route::get('reservas/{reserva}/servicios',         [ReservaServicioController::class, 'index']);
+Route::post('reservas/{reserva}/servicios',        [ReservaServicioController::class, 'store']);
+Route::put('reservas/{reserva}/servicios/{id}',    [ReservaServicioController::class, 'update']);
+Route::delete('reservas/{reserva}/servicios/{id}', [ReservaServicioController::class, 'destroy']);
+
+// Políticas por reserva
+Route::get('reservas/{reserva}/politicas',         [ReservaPoliticaController::class, 'index']);
+Route::post('reservas/{reserva}/politicas',        [ReservaPoliticaController::class, 'store']);
+Route::delete('reservas/{reserva}/politicas/{id}', [ReservaPoliticaController::class, 'destroy']);
+
+// Acciones de reserva
+Route::post('reservas/{reserva}/confirmar', [ReservaController::class, 'confirmar']);
+Route::post('reservas/{reserva}/cancelar',  [ReservaController::class, 'cancelar']);
+Route::post('reservas/{reserva}/cotizar',   [ReservaController::class, 'cotizar']);
+Route::post('reservas/{reserva}/no-show',   [ReservaController::class, 'noShow']);
+Route::post('reservas/{reserva}/checkin',   [ReservaController::class, 'generarEstadia']);
