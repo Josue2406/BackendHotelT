@@ -9,7 +9,8 @@ namespace App\Models\house_keeping;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-
+use App\Models\habitacion\Habitacione;
+use App\Models\usuario\User;
 /**
  * Class Mantenimiento
  * 

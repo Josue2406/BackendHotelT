@@ -21,13 +21,13 @@ class StoreLimpiezaRequest extends FormRequest
             'prioridad'           => ['nullable', Rule::in(['baja','media','alta','urgente'])],
 
             'fecha_inicio'        => ['required','date'],
-            'fecha_reporte'       => ['required','date'],
+            //'fecha_reporte'       => ['required','date'],
             'fecha_final'         => ['nullable','date','after_or_equal:fecha_inicio'],
 
             // FKs laxas mientras no tengas tablas relacionadas listas
             'id_habitacion'       => ['nullable','integer'],
             'id_usuario_asigna'   => ['nullable','integer'],
-            'id_usuario_reporta'  => ['nullable','integer'],
+            //'id_usuario_reporta'  => ['nullable','integer'],
         ];
     }
 }

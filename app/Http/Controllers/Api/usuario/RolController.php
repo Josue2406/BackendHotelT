@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Api\usuario;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreRolRequest;
-use App\Http\Requests\UpdateRolRequest;
-use App\Models\Rol;
+use App\Http\Requests\usuario\StoreRolRequest;
+use App\Http\Requests\usuario\UpdateRolRequest;
+use App\Models\usuario\Rol;
 use Illuminate\Database\QueryException;
 
 class RolController extends Controller
