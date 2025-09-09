@@ -1,5 +1,5 @@
 <?php // app/Http/Requests/UpdateAmenidadRequest.php
-namespace App\Http\Requests;
+namespace App\Http\Requests\catalogo;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;

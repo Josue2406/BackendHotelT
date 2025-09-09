@@ -1,5 +1,5 @@
 <?php
-namespace App\Http\Requests;
+namespace App\Http\Requests\habitaciones;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreHabitacionRequest extends FormRequest {

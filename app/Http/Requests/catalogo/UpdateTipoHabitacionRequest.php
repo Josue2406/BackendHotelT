@@ -1,5 +1,5 @@
 <?php // app/Http/Requests/UpdateTipoHabitacionRequest.php
-namespace App\Http\Requests;
+namespace App\Http\Requests\catalogo;
 
 use Illuminate\Foundation\Http\FormRequest;
 

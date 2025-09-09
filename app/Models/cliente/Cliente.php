@@ -49,8 +49,8 @@ class Cliente extends Model
 		'telefono',
 		'id_tipo_doc',
 		'numero_doc',
-		'id_pais',
-		'direccion'
+		'nacionalidad',
+		// 'direccion'
 	];
 
 	public function id_pais()
