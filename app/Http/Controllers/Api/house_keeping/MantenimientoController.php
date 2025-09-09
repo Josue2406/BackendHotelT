@@ -6,10 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\house_keeping\StoreMantenimientoRequest;
 use App\Http\Requests\house_keeping\UpdateMantenimientoRequest;
 use App\Http\Resources\house_keeping\MantenimientoResource;
-
 use App\Models\house_keeping\Mantenimiento;
-
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 class MantenimientoController extends Controller
 {
@@ -19,12 +18,14 @@ class MantenimientoController extends Controller
         $perPage = (int) $request->input('per_page', 15);
 
         $query = Mantenimiento::with([
-            'id_habitacion',
-            'id_usuario_asigna',
-            'id_usuario_reporta',
-            'historial_mantenimientos_where_id_mantenimiento',
+            'habitacion',
+            'asignador',
+            'reportante',
+            'estadoHabitacion',
+            'historialMantenimientos',
         ])->orderByDesc('fecha_inicio');
 
+        // --- Filtros opcionales ---
         if ($request->filled('prioridad')) {
             $query->where('prioridad', $request->input('prioridad'));
         }
@@ -34,38 +35,46 @@ class MantenimientoController extends Controller
         if ($request->filled('id_habitacion')) {
             $query->where('id_habitacion', (int) $request->input('id_habitacion'));
         }
+        if ($request->filled('estado_id')) {
+            $query->where('id_estado_hab', (int) $request->input('estado_id'));
+        }
+        if ($request->filled('desde')) {
+            $query->whereDate('fecha_inicio', '>=', $request->input('desde'));
+        }
+        if ($request->filled('hasta')) {
+            $query->whereDate('fecha_inicio', '<=', $request->input('hasta'));
+        }
 
         return MantenimientoResource::collection($query->paginate($perPage));
     }
 
     /** POST /mantenimientos */
     public function store(StoreMantenimientoRequest $request)
-{
-    $data = $request->validated();
+    {
+        // Solo datos validados (no permitimos que el cliente mande fecha_reporte ni id_usuario_reporta)
+        $data = $request->validated();
 
-    // Asignar automáticamente quien reporta si no se especifica
-    if (!isset($data['id_usuario_reporta']) && auth()->check()) {
-        $data['id_usuario_reporta'] = auth()->id();
+        // Forzar usuario que reporta y fecha de reporte desde backend
+        $reporterId = optional(auth()->user())->id_usuario ?? auth()->id(); // ajusta según tu esquema
+        $data['id_usuario_reporta'] = $reporterId;
+        $data['fecha_reporte']      = Carbon::now();
+
+        $mtto = Mantenimiento::create($data);
+
+        return (new MantenimientoResource(
+            $mtto->load(['habitacion','asignador','reportante','estadoHabitacion'])
+        ))->response()->setStatusCode(201);
     }
-
-    // Asignar la fecha de reporte con la hora actual (zona horaria definida en .env)
-    $data['fecha_reporte'] = \Carbon\Carbon::now();
-
-    $mtto = Mantenimiento::create($data);
-
-    return (new MantenimientoResource(
-        $mtto->load(['id_habitacion', 'id_usuario_asigna', 'id_usuario_reporta'])
-    ))->response()->setStatusCode(201);
-}
 
     /** GET /mantenimientos/{mantenimiento} */
     public function show(Mantenimiento $mantenimiento)
     {
         $mantenimiento->load([
-            'id_habitacion',
-            'id_usuario_asigna',
-            'id_usuario_reporta',
-            'historial_mantenimientos_where_id_mantenimiento',
+            'habitacion',
+            'asignador',
+            'reportante',
+            'estadoHabitacion',
+            'historialMantenimientos',
         ]);
 
         return new MantenimientoResource($mantenimiento);
@@ -74,10 +83,15 @@ class MantenimientoController extends Controller
     /** PUT/PATCH /mantenimientos/{mantenimiento} */
     public function update(UpdateMantenimientoRequest $request, Mantenimiento $mantenimiento)
     {
-        $mantenimiento->update($request->validated());
+        $data = $request->validated();
+
+        // Blindaje: NO permitir editar fecha_reporte ni id_usuario_reporta
+        unset($data['fecha_reporte'], $data['id_usuario_reporta']);
+
+        $mantenimiento->update($data);
 
         return new MantenimientoResource(
-            $mantenimiento->fresh()->load(['id_habitacion','id_usuario_asigna','id_usuario_reporta'])
+            $mantenimiento->fresh()->load(['habitacion','asignador','reportante','estadoHabitacion'])
         );
     }
 
@@ -90,7 +104,7 @@ class MantenimientoController extends Controller
 
     /**
      * PATCH /mantenimientos/{mantenimiento}/finalizar
-     * Actualiza SOLO fecha_final (y opcionalmente notas).
+     * Finaliza un mantenimiento estableciendo fecha_final (y opcionalmente notas).
      */
     public function finalizar(Request $request, Mantenimiento $mantenimiento)
     {
@@ -104,6 +118,8 @@ class MantenimientoController extends Controller
             'notas'       => $data['notas'] ?? $mantenimiento->notas,
         ]);
 
-        return new MantenimientoResource($mantenimiento->fresh());
+        return new MantenimientoResource(
+            $mantenimiento->fresh()->load(['estadoHabitacion'])
+        );
     }
 }
