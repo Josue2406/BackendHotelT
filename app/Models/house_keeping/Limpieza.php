@@ -1,9 +1,5 @@
 <?php
 
-/**
- * Created by Reliese Model.
- */
-
 namespace App\Models\house_keeping;
 
 use Carbon\Carbon;
@@ -11,9 +7,11 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\habitacion\Habitacione;
 use App\Models\usuario\User;
+use App\Models\habitacion\EstadoHabitacion; // <-- nuevo import
+
 /**
  * Class Limpieza
- * 
+ *
  * @property int $id_limpieza
  * @property string $nombre
  * @property Carbon $fecha_inicio
@@ -25,57 +23,68 @@ use App\Models\usuario\User;
  * @property int|null $id_usuario_asigna
  * @property int|null $id_usuario_reporta
  * @property int|null $id_habitacion
+ * @property int|null $id_estado_hab            // <-- nuevo campo
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * 
- * @property Collection|HistorialLimpieza[] $historial_limpiezas_where_id_limpieza
- *
- * @package App\Models
  */
 class Limpieza extends Model
 {
-	protected $table = 'limpiezas';
-	protected $primaryKey = 'id_limpieza';
+    protected $table = 'limpiezas';
+    protected $primaryKey = 'id_limpieza';
 
-	protected $casts = [
-		'fecha_inicio' => 'datetime',
-		'fecha_final' => 'datetime',
-		'fecha_reporte' => 'datetime',
-		'id_usuario_asigna' => 'int',
-		'id_usuario_reporta' => 'int',
-		'id_habitacion' => 'int'
-	];
+    protected $casts = [
+        'fecha_inicio'       => 'datetime',
+        'fecha_final'        => 'datetime',
+        'fecha_reporte'      => 'datetime',
+        'id_usuario_asigna'  => 'int',
+        'id_usuario_reporta' => 'int',
+        'id_habitacion'      => 'int',
+        'id_estado_hab'      => 'int',   // <-- cast del nuevo campo
+    ];
 
-	protected $fillable = [
-		'nombre',
-		'fecha_inicio',
-		'fecha_final',
-		'descripcion',
-		'fecha_reporte',
-		'notas',
-		'prioridad',
-		'id_usuario_asigna',
-		'id_usuario_reporta',
-		'id_habitacion'
-	];
+    protected $fillable = [
+        'nombre',
+        'fecha_inicio',
+        'fecha_final',
+        'descripcion',
+        'fecha_reporte',
+        'notas',
+        'prioridad',
+        'id_usuario_asigna',
+        'id_usuario_reporta',
+        'id_habitacion',
+        'id_estado_hab',     // <-- fillable del nuevo campo
+    ];
 
-	public function id_habitacion()
-	{
-		return $this->belongsTo(Habitacione::class, 'id_habitacion');
-	}
+    /** Relaciones */
 
-	public function id_usuario_asigna()
-	{
-		return $this->belongsTo(User::class, 'id_usuario_asigna');
-	}
+    // Habitacion a la que pertenece la limpieza
+    public function habitacion()
+    {
+        return $this->belongsTo(Habitacione::class, 'id_habitacion');
+    }
 
-	public function id_usuario_reporta()
-	{
-		return $this->belongsTo(User::class, 'id_usuario_reporta');
-	}
+    // Usuario que asigna la limpieza
+    public function asignador()
+    {
+        return $this->belongsTo(User::class, 'id_usuario_asigna');
+    }
 
-	public function historial_limpiezas_where_id_limpieza()
-	{
-		return $this->hasMany(HistorialLimpieza::class, 'id_limpieza');
-	}
+    // Usuario que reporta la limpieza
+    public function reportante()
+    {
+        return $this->belongsTo(User::class, 'id_usuario_reporta');
+    }
+
+    // Estado de habitación asociado (nuevo)
+    public function estadoHabitacion()
+    {
+        return $this->belongsTo(EstadoHabitacion::class, 'id_estado_hab');
+    }
+
+    // Historial
+    public function historialLimpiezas()
+    {
+        return $this->hasMany(HistorialLimpieza::class, 'id_limpieza');
+    }
 }
