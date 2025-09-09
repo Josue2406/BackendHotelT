@@ -1,10 +1,10 @@
 <?php
-namespace App\Http\Controllers\Api\Clientes;
+namespace App\Http\Controllers\Api\clientes;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreClienteRequest;
-use App\Http\Requests\UpdateClienteRequest;
-use App\Models\Cliente;
+use App\Http\Requests\clientes\StoreClienteRequest;
+use App\Http\Requests\clientes\UpdateClienteRequest;
+use App\Models\cliente\Cliente;
 
 class ClienteController extends Controller
 {

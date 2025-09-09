@@ -1,5 +1,5 @@
 <?php // app/Http/Requests/StoreFuenteRequest.php
-namespace App\Http\Requests;
+namespace App\Http\Requests\catalogo;
 
 use Illuminate\Foundation\Http\FormRequest;
 

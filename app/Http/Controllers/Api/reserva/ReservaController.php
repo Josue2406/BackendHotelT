@@ -2,16 +2,16 @@
 namespace App\Http\Controllers\Api\reserva;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreReservaRequest;
-use App\Http\Requests\UpdateReservaRequest;
-use App\Http\Requests\CancelReservaRequest;
-use App\Http\Requests\CotizarReservaRequest;
-use App\Models\Reserva;
-use App\Models\ReservaHabitacione;
-use App\Models\ReservaServicio;
-use App\Models\ReservaPolitica;
-use App\Models\PoliticaCancelacion;
-use App\Models\Estadia;
+use App\Http\Requests\reserva\StoreReservaRequest;
+use App\Http\Requests\reserva\UpdateReservaRequest;
+use App\Http\Requests\reserva\CancelReservaRequest;
+use App\Http\Requests\reserva\CotizarReservaRequest;
+use App\Models\reserva\Reserva;
+use App\Models\reserva\ReservaHabitacion;
+use App\Models\reserva\ReservaServicio;
+use App\Models\reserva\ReservaPolitica;
+use App\Models\reserva\PoliticaCancelacion;
+use App\Models\estadia\Estadia;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 

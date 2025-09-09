@@ -2,8 +2,8 @@
 namespace App\Http\Controllers\Api\habitaciones;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreBloqueoOperativoRequest;
-use App\Models\HabBloqueoOperativo;
+use App\Http\Requests\habitaciones\StoreBloqueoOperativoRequest;
+use App\Models\house_keeping\HabBloqueoOperativo;
 
 class BloqueoOperativoController extends Controller
 {
