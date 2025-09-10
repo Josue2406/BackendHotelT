@@ -4,7 +4,7 @@
  * Created by Reliese Model.
  */
 
-namespace App\Models\chech_in;
+namespace App\Models\check_in;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;

@@ -2,9 +2,9 @@
 namespace App\Http\Controllers\Api\catalogo;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreTipoHabitacionRequest;
-use App\Http\Requests\UpdateTipoHabitacionRequest;
-use App\Models\TiposHabitacion;
+use App\Http\Requests\catalogo\StoreTipoHabitacionRequest;
+use App\Http\Requests\catalogo\UpdateTipoHabitacionRequest;
+use App\Models\habitacion\TiposHabitacion;
 
 class TipoHabitacionController extends Controller
 {

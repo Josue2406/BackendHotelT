@@ -2,9 +2,9 @@
 namespace App\Http\Controllers\Api\catalogo;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreTipoDocRequest;
-use App\Http\Requests\UpdateTipoDocRequest;
-use App\Models\TipoDoc;
+use App\Http\Requests\catalogo\StoreTipoDocRequest;
+use App\Http\Requests\catalogo\UpdateTipoDocRequest;
+use App\Models\cliente\TipoDoc;
 
 class TipoDocController extends Controller
 {

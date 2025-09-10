@@ -8,7 +8,7 @@ use App\Http\Requests\house_keeping\UpdateLimpiezaRequest;
 use App\Http\Resources\house_keeping\LimpiezaResource;
 use App\Models\house_keeping\Limpieza;
 use Illuminate\Http\Request;
-
+use Carbon\Carbon;
 class LimpiezaController extends Controller
 {
     /** GET /limpiezas */
@@ -40,20 +40,23 @@ class LimpiezaController extends Controller
 
     /** POST /limpiezas */
     public function store(StoreLimpiezaRequest $request)
-    {
-        $data = $request->validated();
+{
+    $data = $request->validated();
 
-        // Por defecto, quien reporta puede ser el autenticado (opcional)
-        if (!isset($data['id_usuario_reporta']) && auth()->check()) {
-            $data['id_usuario_reporta'] = auth()->id();
-        }
-
-        $limpieza = Limpieza::create($data);
-
-        return (new LimpiezaResource(
-            $limpieza->load(['id_habitacion','id_usuario_asigna','id_usuario_reporta'])
-        ))->response()->setStatusCode(201);
+    // Si no se pasó 'id_usuario_reporta', usamos el usuario autenticado (opcional)
+    if (!isset($data['id_usuario_reporta']) && auth()->check()) {
+        $data['id_usuario_reporta'] = auth()->id();
     }
+
+    // Asignar la fecha actual automáticamente como fecha de reporte
+    $data['fecha_reporte'] = Carbon::now();
+
+    $limpieza = Limpieza::create($data);
+
+    return (new LimpiezaResource(
+        $limpieza->load(['id_habitacion','id_usuario_asigna','id_usuario_reporta'])
+    ))->response()->setStatusCode(201);
+}
 
     /** GET /limpiezas/{limpieza} */
     public function show(Limpieza $limpieza)

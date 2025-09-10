@@ -2,8 +2,8 @@
 namespace App\Http\Controllers\Api\catalogo;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\habitaciones\StoreEstadoHabitacionRequest;
-use App\Http\Requests\habitaciones\UpdateEstadoHabitacionRequest;
+use App\Http\Requests\catalogo\StoreEstadoHabitacionRequest;
+use App\Http\Requests\catalogo\UpdateEstadoHabitacionRequest;
 use App\Models\habitacion\EstadoHabitacion;
 
 class EstadoHabitacionController extends Controller
