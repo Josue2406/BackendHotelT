@@ -58,9 +58,9 @@ class User extends Model
 		'telefono'
 	];
 
-	public function id_rol()
+	public function rol()
 	{
-		return $this->belongsTo(Rol::class, 'id_rol');
+		return $this->belongsTo(Rol::class, 'id_rol', 'id_rol');
 	}
 
 	public function historial_limpiezas_where_actor_id()

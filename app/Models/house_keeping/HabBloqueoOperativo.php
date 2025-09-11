@@ -8,7 +8,7 @@ namespace App\Models\house_keeping;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
-
+use App\Models\habitacion\Habitacione;
 /**
  * Class HabBloqueoOperativo
  * 
@@ -43,7 +43,7 @@ class HabBloqueoOperativo extends Model
 		'fecha_fin'
 	];
 
-	public function id_habitacion()
+	public function habitacion()
 	{
 		return $this->belongsTo(Habitacione::class, 'id_habitacion');
 	}
