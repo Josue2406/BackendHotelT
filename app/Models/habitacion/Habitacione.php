@@ -11,6 +11,10 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+use App\Models\habitacion\EstadoHabitacion;
+use App\Models\habitacion\TiposHabitacion;
+
+
 /**
  * Class Habitacione
  * 
@@ -99,4 +103,16 @@ class Habitacione extends Model
 	{
 		return $this->hasMany(ReservaHabitacion::class, 'id_habitacion');
 	}
+
+	// Alias legibles para usar en with() y load()
+public function estado()
+{
+    return $this->id_estado_hab();
+}
+
+public function tipo()
+{
+    return $this->tipo_habitacion_id();
+}
+
 }
