@@ -9,6 +9,7 @@ use App\Http\Resources\house_keeping\LimpiezaResource;
 use App\Models\house_keeping\Limpieza;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+
 class LimpiezaController extends Controller
 {
     /** GET /limpiezas */
@@ -17,14 +18,14 @@ class LimpiezaController extends Controller
         $perPage = (int) $request->input('per_page', 15);
 
         $query = Limpieza::with([
-            // Relaciones según tu modelo (nombres tal cual)
-            'id_habitacion',
-            'id_usuario_asigna',
-            'id_usuario_reporta',
-            'historial_limpiezas_where_id_limpieza',
+            'habitacion',
+            'asignador',
+            'reportante',
+            'estadoHabitacion',
+            'historialLimpiezas',
         ])->orderByDesc('fecha_inicio');
 
-        // Filtros opcionales
+        // --- Filtros opcionales ---
         if ($request->filled('prioridad')) {
             $query->where('prioridad', $request->input('prioridad'));
         }
@@ -34,38 +35,46 @@ class LimpiezaController extends Controller
         if ($request->filled('id_habitacion')) {
             $query->where('id_habitacion', (int) $request->input('id_habitacion'));
         }
+        if ($request->filled('estado_id')) {
+            $query->where('id_estado_hab', (int) $request->input('estado_id'));
+        }
+        if ($request->filled('desde')) {
+            $query->whereDate('fecha_inicio', '>=', $request->input('desde'));
+        }
+        if ($request->filled('hasta')) {
+            $query->whereDate('fecha_inicio', '<=', $request->input('hasta'));
+        }
 
         return LimpiezaResource::collection($query->paginate($perPage));
     }
 
     /** POST /limpiezas */
     public function store(StoreLimpiezaRequest $request)
-{
-    $data = $request->validated();
+    {
+        // Tomar solo lo validado (no permitimos que el cliente mande fecha_reporte ni id_usuario_reporta)
+        $data = $request->validated();
 
-    // Si no se pasó 'id_usuario_reporta', usamos el usuario autenticado (opcional)
-    if (!isset($data['id_usuario_reporta']) && auth()->check()) {
-        $data['id_usuario_reporta'] = auth()->id();
+        // Forzar siempre el usuario que reporta y la fecha de reporte desde backend
+        $reporterId = optional(auth()->user())->id_usuario ?? auth()->id(); // según tu esquema de usuarios
+        $data['id_usuario_reporta'] = $reporterId;
+        $data['fecha_reporte']      = Carbon::now();
+
+        $limpieza = Limpieza::create($data);
+
+        return (new LimpiezaResource(
+            $limpieza->load(['habitacion','asignador','reportante','estadoHabitacion'])
+        ))->response()->setStatusCode(201);
     }
-
-    // Asignar la fecha actual automáticamente como fecha de reporte
-    $data['fecha_reporte'] = Carbon::now();
-
-    $limpieza = Limpieza::create($data);
-
-    return (new LimpiezaResource(
-        $limpieza->load(['id_habitacion','id_usuario_asigna','id_usuario_reporta'])
-    ))->response()->setStatusCode(201);
-}
 
     /** GET /limpiezas/{limpieza} */
     public function show(Limpieza $limpieza)
     {
         $limpieza->load([
-            'id_habitacion',
-            'id_usuario_asigna',
-            'id_usuario_reporta',
-            'historial_limpiezas_where_id_limpieza',
+            'habitacion',
+            'asignador',
+            'reportante',
+            'estadoHabitacion',
+            'historialLimpiezas',
         ]);
 
         return new LimpiezaResource($limpieza);
@@ -74,10 +83,15 @@ class LimpiezaController extends Controller
     /** PUT/PATCH /limpiezas/{limpieza} */
     public function update(UpdateLimpiezaRequest $request, Limpieza $limpieza)
     {
-        $limpieza->update($request->validated());
+        $data = $request->validated();
+
+        // Blindaje: aunque el cliente los envíe, NO permitimos cambios a estos campos
+        unset($data['fecha_reporte'], $data['id_usuario_reporta']);
+
+        $limpieza->update($data);
 
         return new LimpiezaResource(
-            $limpieza->fresh()->load(['id_habitacion','id_usuario_asigna','id_usuario_reporta'])
+            $limpieza->fresh()->load(['habitacion','asignador','reportante','estadoHabitacion'])
         );
     }
 
@@ -88,7 +102,10 @@ class LimpiezaController extends Controller
         return response()->noContent();
     }
 
-    /** PATCH /limpiezas/{limpieza}/finalizar — solo fecha_final (y opcional notas) */
+    /**
+     * PATCH /limpiezas/{limpieza}/finalizar
+     * Finaliza una limpieza estableciendo fecha_final (y opcionalmente notas).
+     */
     public function finalizar(Request $request, Limpieza $limpieza)
     {
         $data = $request->validate([
@@ -101,6 +118,6 @@ class LimpiezaController extends Controller
             'notas'       => $data['notas'] ?? $limpieza->notas,
         ]);
 
-        return new LimpiezaResource($limpieza->fresh());
+        return new LimpiezaResource($limpieza->fresh()->load(['estadoHabitacion']));
     }
 }
