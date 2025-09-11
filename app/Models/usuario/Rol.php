@@ -33,8 +33,8 @@ class Rol extends Model
 		'descripcion'
 	];
 
-	public function users_where_id_rol()
+	public function users()
 	{
-		return $this->hasMany(User::class, 'id_rol');
+		return $this->hasMany(User::class, 'id_rol', 'id_rol');
 	}
 }
