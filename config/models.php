@@ -342,6 +342,17 @@ return [
         */
 
         'model_names' => [
+            // tablas -> nombre de clase que quieres
+    'estadias'                => 'Estadia',
+    'asignacion_habitacions'  => 'AsignacionHabitacion',
+    'habitacions'             => 'Habitacion',
+    'reserva_habitacions'     => 'ReservaHabitacion',
+    'reservas'                => 'Reserva',
+    'check_ins'               => 'CheckIn',
+    'check_outs'              => 'CheckOut',
+    'hab_bloqueo_operativos'  => 'HabBloqueoOperativo',
+    'folios'                  => 'Folio',
+    'creditos_respaldos'      => 'CreditoRespaldo',
 
         ],
 
@@ -531,4 +542,61 @@ return [
 //            ]
 //        ],
 //    ],
+
+
+
+'connections' => [
+    'mysql' => [
+        // RESERVAS
+        'reservas' => [
+            'namespace' => 'App\\Models\\reserva',
+            'path'      => app_path('Models/reserva'),
+        ],
+        'reserva_habitacions' => [
+            'namespace' => 'App\\Models\\reserva',
+            'path'      => app_path('Models/reserva'),
+        ],
+
+        // HABITACIÓN
+        'habitacions' => [
+            'namespace' => 'App\\Models\\habitacion',
+            'path'      => app_path('Models/habitacion'),
+        ],
+        'asignacion_habitacions' => [
+            'namespace' => 'App\\Models\\habitacion',
+            'path'      => app_path('Models/habitacion'),
+        ],
+        'hab_bloqueo_operativos' => [
+            'namespace' => 'App\\Models\\habitacion',
+            'path'      => app_path('Models/habitacion'),
+        ],
+
+        // ESTADÍA
+        'estadias' => [
+            'namespace' => 'App\\Models\\estadia',
+            'path'      => app_path('Models/estadia'),
+        ],
+
+        // CHECK-IN / CHECK-OUT
+        'check_ins' => [
+            'namespace' => 'App\\Models\\checkin',
+            'path'      => app_path('Models/checkin'),
+        ],
+        'check_outs' => [
+            'namespace' => 'App\\Models\\checkout',
+            'path'      => app_path('Models/checkout'),
+        ],
+
+        // FOLIOS / CRÉDITO
+        'folios' => [
+            'namespace' => 'App\\Models\\folio',
+            'path'      => app_path('Models/folio'),
+        ],
+        'creditos_respaldos' => [
+            'namespace' => 'App\\Models\\credito',
+            'path'      => app_path('Models/credito'),
+        ],
+    ],
+],
+
 ];

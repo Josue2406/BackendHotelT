@@ -8,6 +8,7 @@ namespace App\Models\check_in;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\check_in\AsignacionHabitacion;
 
 /**
  * Class CheckIn
@@ -38,8 +39,21 @@ class CheckIn extends Model
 		'obervacion'
 	];
 
+
+	  /** Relación inversa: muchos checkins pertenecen a una asignación */
+    public function asignacion(): BelongsTo
+    {
+        return $this->belongsTo(AsignacionHabitacion::class, 'id_asignacion', 'id_asignacion');
+    }
+
+    /** Scopes útiles */
+    public function scopeRecientes($query)
+    {
+        return $query->orderByDesc('fecha_hora');
+    }
+	/*
 	public function id_asignacion()
 	{
 		return $this->belongsTo(AsignacionHabitacion::class, 'id_asignacion');
-	}
+	}*/
 }
