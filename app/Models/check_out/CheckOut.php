@@ -38,8 +38,23 @@ class CheckOut extends Model
 		'resultado'
 	];
 
+	/*
 	public function id_asignacion()
 	{
 		return $this->belongsTo(AsignacionHabitacion::class, 'id_asignacion');
-	}
+	}*/
+
+	public function asignacion()
+    {
+        return $this->belongsTo(AsignacionHabitacion::class, 'id_asignacion', 'id_asignacion');
+    }
+
+
+
+	 /** (Opcional) Scope útil para ordenar por fecha */
+    public function scopeRecientes($query)
+    {
+        return $query->orderByDesc('fecha_hora');
+    }
 }
+

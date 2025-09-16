@@ -48,6 +48,16 @@ class ReservaHabitacion extends Model
 		'pax_total'
 	];
 
+	/*
+	public function hayChoqueHab(int $idHab, string $desde, string $hasta): bool
+{
+    // fin exclusivo: [llegada, salida)
+    return ReservaHabitacion::query()
+        ->where('id_habitacion', $idHab)
+        ->where('fecha_llegada', '<', $hasta)
+        ->where('fecha_salida',  '>', $desde)
+        ->exists();
+} */
 	public function id_habitacion()
 	{
 		return $this->belongsTo(Habitacione::class, 'id_habitacion');

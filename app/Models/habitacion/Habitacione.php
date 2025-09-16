@@ -17,6 +17,11 @@ use App\Models\house_keeping\HabBloqueoOperativo;
 use App\Models\house_keeping\Limpieza;
 use App\Models\house_keeping\Mantenimiento;
 
+use App\Models\check_in\AsignacionHabitacion;    // <-- IMPORTANTE
+use App\Models\habitacion\HabitacionAmenidad;    // <-- AJUSTA si tu namespace difiere
+use App\Models\reserva\ReservaHabitacion;        // <-- AJUSTA si tu namespace difiere
+
+
 /**
  * Class Habitacione
  * 
