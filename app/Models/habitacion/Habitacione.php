@@ -13,6 +13,13 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 use App\Models\habitacion\EstadoHabitacion;
 use App\Models\habitacion\TiposHabitacion;
+use App\Models\house_keeping\HabBloqueoOperativo;
+use App\Models\house_keeping\Limpieza;
+use App\Models\house_keeping\Mantenimiento;
+
+use App\Models\check_in\AsignacionHabitacion;    // <-- IMPORTANTE
+use App\Models\habitacion\HabitacionAmenidad;    // <-- AJUSTA si tu namespace difiere
+use App\Models\reserva\ReservaHabitacion;        // <-- AJUSTA si tu namespace difiere
 
 
 /**
@@ -79,9 +86,9 @@ class Habitacione extends Model
 		return $this->hasMany(AsignacionHabitacion::class, 'id_hab');
 	}
 
-	public function hab_bloqueo_operativos_where_id_habitacion()
+	public function bloqueo_operativos()
 	{
-		return $this->hasMany(HabBloqueoOperativo::class, 'id_habitacion');
+		return $this->hasMany(HabBloqueoOperativo::class, 'id_habitacion', 'id_habitacion');
 	}
 
 	public function habitacion_amenidads_where_id_habitacion()

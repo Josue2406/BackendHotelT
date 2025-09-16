@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\Model;
  *
  * @package App\Models
  */
-class EstadoEstadium extends Model
+class EstadoEstadia extends Model
 {
 	protected $table = 'estado_estadia';
 	protected $primaryKey = 'id_estado_estadia';
@@ -33,6 +33,6 @@ class EstadoEstadium extends Model
 
 	public function estadia_where_id_estado_estadium()
 	{
-		return $this->hasMany(Estadium::class, 'id_estado_estadia');
+		return $this->hasMany(Estadia::class, 'id_estado_estadia');
 	}
 }

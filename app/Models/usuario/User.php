@@ -9,7 +9,10 @@ namespace App\Models\usuario;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-
+////////
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 /**
  * Class User
  * 
@@ -35,33 +38,28 @@ use Illuminate\Database\Eloquent\Model;
  *
  * @package App\Models
  */
-class User extends Model
+class User extends Authenticatable
 {
-	protected $table = 'users';
-	protected $primaryKey = 'id_usuario';
+    use HasApiTokens, Notifiable;
 
-	protected $casts = [
-		'id_rol' => 'int'
-	];
+    protected $table = 'users';
+    protected $primaryKey = 'id_usuario';
+    public $incrementing = true;
 
-	protected $hidden = [
-		'password'
-	];
+    protected $casts = [
+        'id_rol' => 'int',
+    ];
 
-	protected $fillable = [
-		'id_rol',
-		'nombre',
-		'apellido1',
-		'apellido2',
-		'email',
-		'password',
-		'telefono'
-	];
+    protected $hidden = ['password'];
 
-	public function id_rol()
-	{
-		return $this->belongsTo(Rol::class, 'id_rol');
-	}
+    protected $fillable = [
+        'id_rol','nombre','apellido1','apellido2','email','password','telefono'
+    ];
+
+    public function rol()
+    {
+        return $this->belongsTo(Rol::class, 'id_rol', 'id_rol');
+    }
 
 	public function historial_limpiezas_where_actor_id()
 	{

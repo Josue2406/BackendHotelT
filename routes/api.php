@@ -1,5 +1,7 @@
 
 <?php
+use App\Http\Controllers\Api\frontdesk\FrontDeskController; //Ruta nueva
+
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\usuario\RolController;
 use App\Http\Controllers\Api\usuario\UsuarioController;
@@ -20,8 +22,26 @@ use App\Http\Controllers\Api\reserva\{
   ReservaController, ReservaHabitacionController, ReservaServicioController, ReservaPoliticaController
 };
 
-Route::apiResource('limpiezas', LimpiezaController::class);
-Route::apiResource('mantenimientos', MantenimientoController::class);
+use App\Http\Controllers\Api\frontdesk\WalkInsController;
+use App\Http\Controllers\Api\frontdesk\ReservasCheckinController;
+use App\Http\Controllers\Api\frontdesk\EstadoEstadiaController;
+use App\Http\Controllers\Api\frontdesk\EstadiasController;
+use App\Http\Controllers\Api\Auth\AuthController;
+
+Route::post('/auth/login', [AuthController::class, 'login']);
+Route::post('/auth/register', [AuthController::class, 'register']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/auth/me', [AuthController::class, 'me']);
+    Route::post('/auth/logout', [AuthController::class, 'logout']);
+});
+
+//use App\Http\Controllers\Api\frontdesk\AsignacionHabitacion;
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::apiResource('limpiezas', LimpiezaController::class);
+    Route::apiResource('mantenimientos', MantenimientoController::class);
+});
 Route::apiResource('roles', RolController::class);
 Route::apiResource('usuarios', UsuarioController::class);
 Route::apiResource('estados-habitacion', EstadoHabitacionController::class);
@@ -63,3 +83,64 @@ Route::post('reservas/{reserva}/cancelar',  [ReservaController::class, 'cancelar
 Route::post('reservas/{reserva}/cotizar',   [ReservaController::class, 'cotizar']);
 Route::post('reservas/{reserva}/no-show',   [ReservaController::class, 'noShow']);
 Route::post('reservas/{reserva}/checkin',   [ReservaController::class, 'generarEstadia']);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+Walk-in (crear estadía + asignación + check-in)
+
+Check-in desde reserva (genera estadía + asignación + check-in)
+
+Cambio de habitación (room move)
+
+Ajuste de fechas de la estadía
+
+Check-out (crea evento)
+*/
+
+Route::prefix('frontdesk')->group(function () {
+    // Walk-in
+    Route::post('/walkin', [WalkInsController::class, 'store']);
+
+    // Check-in desde reserva
+    Route::post('/reserva/{reserva}/checkin', [ReservasCheckinController::class, 'store']);
+    //Route::post('/frontdesk/reserva/{reserva}/checkin', [ReservasCheckinController::class, 'store']);
+
+    // Operaciones de estadía
+   // Route::post('/estadia/{estadia}/room-move', [EstadiasController::class, 'roomMove']);
+   // Route::patch('/estadia/{estadia}/fechas',   [EstadiasController::class, 'updateFechas']);
+    //Route::post('/estadia/{estadia}/checkout',  [EstadiasController::class, 'checkout']);
+
+    // Consultas
+    //Route::get('/estadia/{estadia}', [EstadiasController::class, 'show']);
+    //Route::get('/estadias',          [EstadiasController::class, 'index']);
+
+    
+    //Estado de estadia
+    Route::get('/estado-estadia',  [EstadoEstadiaController::class, 'index']);
+    Route::post('/estado-estadia', [EstadoEstadiaController::class, 'store']);
+
+
+
+    //Estadias
+     Route::get('/estadia/{estadia}', [EstadiasController::class, 'show']);   // detalle
+  Route::get('/estadias',          [EstadiasController::class, 'index']);  // listado/paginado
+
+
+  Route::post('/estadia/{estadia}/room-move', [EstadiasController::class, 'roomMove']);
+  Route::patch('/estadia/{estadia}/fechas',    [EstadiasController::class, 'updateFechas']);
+  Route::post('/estadia/{estadia}/checkout',  [EstadiasController::class, 'checkout']);
+  Route::get('/estadia/{estadia}',            [EstadiasController::class, 'show']);
+  Route::get('/estadias',                     [EstadiasController::class, 'index']);
+});
