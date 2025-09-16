@@ -9,9 +9,15 @@ use App\Http\Resources\house_keeping\LimpiezaResource;
 use App\Models\house_keeping\Limpieza;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
-
+use App\Services\house_keeping\LimpiezaService;
 class LimpiezaController extends Controller
 {
+    protected $limpiezaService;
+
+    public function __construct(LimpiezaService $limpiezaService)
+    {
+        $this->limpiezaService = $limpiezaService;
+    }
     /** GET /limpiezas */
     public function index(Request $request)
     {
@@ -59,7 +65,9 @@ class LimpiezaController extends Controller
         $data['id_usuario_reporta'] = $reporterId;
         $data['fecha_reporte']      = Carbon::now();
 
-        $limpieza = Limpieza::create($data);
+        //$limpieza = Limpieza::create($data);
+        $limpieza = $this->limpiezaService->crearLimpieza($data);
+
 
         return (new LimpiezaResource(
             $limpieza->load(['habitacion','asignador','reportante','estadoHabitacion'])
@@ -88,7 +96,8 @@ class LimpiezaController extends Controller
         // Blindaje: aunque el cliente los envíe, NO permitimos cambios a estos campos
         unset($data['fecha_reporte'], $data['id_usuario_reporta']);
 
-        $limpieza->update($data);
+        //$limpieza->update($data);
+        $this->limpiezaService->actualizarLimpieza($limpieza, $data);
 
         return new LimpiezaResource(
             $limpieza->fresh()->load(['habitacion','asignador','reportante','estadoHabitacion'])

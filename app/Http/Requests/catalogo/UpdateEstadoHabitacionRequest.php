@@ -12,6 +12,7 @@ class UpdateEstadoHabitacionRequest extends FormRequest
         return [
             'nombre'      => ['sometimes','string','max:30', Rule::unique('estado_habitacions','nombre')->ignore($id,'id_estado_hab')],
             'descripcion' => 'nullable|string|max:100',
+            'tipo' => 'sometimes|string|max:100',
         ];
     }
 }

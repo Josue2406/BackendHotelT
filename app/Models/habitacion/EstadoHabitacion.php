@@ -29,6 +29,7 @@ class EstadoHabitacion extends Model
     protected $fillable = [
         'nombre',
         'descripcion',
+        'tipo', 
     ];
 
     /** Relaciones */
