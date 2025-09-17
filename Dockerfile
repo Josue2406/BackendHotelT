@@ -1,5 +1,5 @@
-# ===== PHP-FPM 8.3 con extensiones comunes para Laravel =====
-FROM php:8.3-fpm
+# ===== PHP 8.3 con extensiones comunes para Laravel =====
+FROM php:8.3-cli
 
 # Opcional: variable para controlar si instalas dev deps en composer
 ARG COMPOSER_NO_DEV=1
@@ -19,7 +19,6 @@ WORKDIR /var/www/html
 
 # Aprovecha caché: primero manifiestos de Composer
 COPY composer.json composer.lock ./
-# Instala dependencias (sin scripts para acelerar build en CI)
 RUN if [ "$COMPOSER_NO_DEV" = "1" ]; then \
       composer install --no-dev --prefer-dist --no-interaction --no-progress --no-scripts; \
     else \
@@ -33,10 +32,11 @@ COPY . .
 RUN chown -R www-data:www-data storage bootstrap/cache \
  && chmod -R 775 storage bootstrap/cache
 
-# Usuario no root
-USER www-data
+# Render inyecta $PORT, así que lo usamos para el servidor embebido
+ENV PORT=10000
 
-# PHP-FPM expone 9000
-EXPOSE 9000
+# Exponer el puerto (Render igualmente inyecta uno)
+EXPOSE 10000
 
-# (El entrypoint lo maneja la imagen base de php-fpm)
+# Arrancar servidor embebido de PHP sirviendo la carpeta public
+CMD ["sh", "-lc", "php -S 0.0.0.0:$PORT -t public"]
