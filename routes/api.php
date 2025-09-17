@@ -38,10 +38,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
 //use App\Http\Controllers\Api\frontdesk\AsignacionHabitacion;
 
-Route::middleware('auth:sanctum')->group(function () {
+//Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('limpiezas', LimpiezaController::class);
     Route::apiResource('mantenimientos', MantenimientoController::class);
-});
+//});
 Route::apiResource('roles', RolController::class);
 Route::apiResource('usuarios', UsuarioController::class);
 Route::apiResource('estados-habitacion', EstadoHabitacionController::class);

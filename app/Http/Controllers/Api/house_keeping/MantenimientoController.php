@@ -9,9 +9,16 @@ use App\Http\Resources\house_keeping\MantenimientoResource;
 use App\Models\house_keeping\Mantenimiento;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
-
+use App\Services\house_keeping\MantenimientoService;
 class MantenimientoController extends Controller
 {
+
+    protected MantenimientoService $service;
+
+public function __construct(MantenimientoService $service)
+{
+    $this->service = $service;
+}
     /** GET /mantenimientos */
     public function index(Request $request)
     {
@@ -60,6 +67,7 @@ class MantenimientoController extends Controller
         $data['fecha_reporte']      = Carbon::now();
 
         $mtto = Mantenimiento::create($data);
+        $this->service->registrarCreacion($mtto);
 
         return (new MantenimientoResource(
             $mtto->load(['habitacion','asignador','reportante','estadoHabitacion'])
@@ -87,6 +95,7 @@ class MantenimientoController extends Controller
 
         // Blindaje: NO permitir editar fecha_reporte ni id_usuario_reporta
         unset($data['fecha_reporte'], $data['id_usuario_reporta']);
+        $this->service->registrarActualizacion($mantenimiento, $data);
 
         $mantenimiento->update($data);
 
