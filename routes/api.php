@@ -26,14 +26,22 @@ use App\Http\Controllers\Api\frontdesk\WalkInsController;
 use App\Http\Controllers\Api\frontdesk\ReservasCheckinController;
 use App\Http\Controllers\Api\frontdesk\EstadoEstadiaController;
 use App\Http\Controllers\Api\frontdesk\EstadiasController;
+use App\Http\Controllers\Api\Auth\AuthController;
 
+Route::post('/auth/login', [AuthController::class, 'login']);
+Route::post('/auth/register', [AuthController::class, 'register']);
 
-
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/auth/me', [AuthController::class, 'me']);
+    Route::post('/auth/logout', [AuthController::class, 'logout']);
+});
 
 //use App\Http\Controllers\Api\frontdesk\AsignacionHabitacion;
 
-Route::apiResource('limpiezas', LimpiezaController::class);
-Route::apiResource('mantenimientos', MantenimientoController::class);
+//Route::middleware('auth:sanctum')->group(function () {
+    Route::apiResource('limpiezas', LimpiezaController::class);
+    Route::apiResource('mantenimientos', MantenimientoController::class);
+//});
 Route::apiResource('roles', RolController::class);
 Route::apiResource('usuarios', UsuarioController::class);
 Route::apiResource('estados-habitacion', EstadoHabitacionController::class);

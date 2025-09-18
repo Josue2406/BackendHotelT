@@ -10,6 +10,7 @@ class StoreEstadoHabitacionRequest extends FormRequest
         return [
             'nombre'      => 'required|string|max:30|unique:estado_habitacions,nombre',
             'descripcion' => 'nullable|string|max:100',
+            'tipo' => 'required|string|max:100',
         ];
     }
 }
