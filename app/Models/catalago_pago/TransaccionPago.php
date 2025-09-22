@@ -8,6 +8,10 @@ namespace App\Models\catalago_pago;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\reserva\CargoReserva;
+use App\Models\reserva\ReservaPago;
+use App\Models\CreditoRespaldo;
+use App\Models\check_out\Folio;	
 
 /**
  * Class TransaccionPago

@@ -9,7 +9,10 @@ namespace App\Models;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-
+use App\Models\catalago_pago\TransaccionPago;
+use App\Models\reserva\ReservaHabitacion;
+//use App\Models\catalago_pago\EstadoCredito;
+use App\Models\check_in\EstadoCredito;
 /**
  * Class CreditoRespaldo
  * 

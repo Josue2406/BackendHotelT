@@ -1,4 +1,3 @@
-
 <?php
 use App\Http\Controllers\Api\frontdesk\FrontDeskController; //Ruta nueva
 
@@ -21,6 +20,7 @@ use App\Http\Controllers\Api\habitaciones\DisponibilidadController;
 use App\Http\Controllers\Api\reserva\{
   ReservaController, ReservaHabitacionController, ReservaServicioController, ReservaPoliticaController
 };
+use App\Http\Controllers\Api\reserva\ServicioController; // agregado
 
 use App\Http\Controllers\Api\frontdesk\WalkInsController;
 use App\Http\Controllers\Api\frontdesk\ReservasCheckinController;
@@ -53,7 +53,7 @@ Route::apiResource('habitacion-amenidad',HabitacionAmenidadController::class)->o
 Route::apiResource('fuentes', FuenteController::class);
 Route::apiResource('tipos-doc', TipoDocController::class);
 Route::apiResource('estados-reserva', EstadoReservaController::class);
-//Route::apiResource('clientes', ClienteController::class);
+Route::apiResource('servicios', ServicioController::class); // recurso servicios
 Route::apiResource('habitaciones', HabitacionController::class)->only(['index','show','store','update']);
 Route::apiResource('bloqueos', BloqueoOperativoController::class)->only(['index','show','store','destroy']);
 
@@ -71,6 +71,7 @@ Route::delete('reservas/{reserva}/habitaciones/{id}', [ReservaHabitacionControll
 // Servicios por reserva
 Route::get('reservas/{reserva}/servicios',         [ReservaServicioController::class, 'index']);
 Route::post('reservas/{reserva}/servicios',        [ReservaServicioController::class, 'store']);
+Route::post('reservas/{reserva}/servicios/batch',  [ReservaServicioController::class, 'storeBatch']); // agregado
 Route::put('reservas/{reserva}/servicios/{id}',    [ReservaServicioController::class, 'update']);
 Route::delete('reservas/{reserva}/servicios/{id}', [ReservaServicioController::class, 'destroy']);
 

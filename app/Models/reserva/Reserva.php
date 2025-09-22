@@ -96,7 +96,7 @@ class Reserva extends Model
 
 	public function estadia_where_id_reserva()
 	{
-		return $this->hasMany(Estadium::class, 'id_reserva');
+		return $this->hasMany(Estadia::class, 'id_reserva');
 	}
 
 	public function reserva_habitacions_where_id_reserva()
