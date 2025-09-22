@@ -29,7 +29,7 @@ class DisponibilidadController extends Controller
             ->where('fecha_salida',  '>', $desde);
 
         $ocupadasAsign = AsignacionHabitacion::select('id_hab')
-            ->where('fecha_asignacion', '<', $hasta); // si manejas checkout, puedes filtrar a asignaciones activas
+            ->where('fecha_asignacion', '<', $hasta); 
 
         $bloqueos = HabBloqueoOperativo::select('id_habitacion')
             ->where('fecha_ini', '<', $hasta)

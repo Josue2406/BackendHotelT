@@ -3,7 +3,7 @@ namespace App\Http\Controllers\Api\catalogo;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\catalogo\StoreHabitacionAmenidadRequest;
-use App\Models\habitacion\catalogo\HabitacionAmenidad;
+use App\Models\habitacion\HabitacionAmenidad;
 
 class HabitacionAmenidadController extends Controller
 {
