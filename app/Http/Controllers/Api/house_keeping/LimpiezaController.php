@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\house_keeping;
 
+use App\Events\NuevaLimpiezaAsignada;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\house_keeping\StoreLimpiezaRequest;
 use App\Http\Requests\house_keeping\UpdateLimpiezaRequest;
@@ -67,6 +68,16 @@ class LimpiezaController extends Controller
 
         //$limpieza = Limpieza::create($data);
         $limpieza = $this->limpiezaService->crearLimpieza($data);
+
+        $limpieza->load(['habitacion','asignador','estadoHabitacion']);
+        event(new NuevaLimpiezaAsignada([
+            'id'         => $limpieza->id_limpieza ?? $limpieza->id ?? null,
+            'habitacion' => $limpieza->habitacion->numero ?? 'N/A',
+            'asignado_a' => optional($limpieza->asignador)->nombre ?? 'Sin asignar',
+            'estado'     => optional($limpieza->estadoHabitacion)->nombre ?? 'Desconocido',
+            'fecha'      => $limpieza->fecha_inicio ?? now()->toDateTimeString(),
+            'prioridad'  => $limpieza->prioridad,
+        ]));
 
 
         return (new LimpiezaResource(

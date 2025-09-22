@@ -26,6 +26,8 @@ use App\Http\Controllers\Api\frontdesk\WalkInsController;
 use App\Http\Controllers\Api\frontdesk\ReservasCheckinController;
 use App\Http\Controllers\Api\frontdesk\EstadoEstadiaController;
 use App\Http\Controllers\Api\frontdesk\EstadiasController;
+
+use App\Http\Controllers\Api\clientes\ClienteWizardController;
 use App\Http\Controllers\Api\Auth\AuthController;
 
 Route::post('/auth/login', [AuthController::class, 'login']);
@@ -38,10 +40,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
 //use App\Http\Controllers\Api\frontdesk\AsignacionHabitacion;
 
-Route::middleware('auth:sanctum')->group(function () {
+//Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('limpiezas', LimpiezaController::class);
     Route::apiResource('mantenimientos', MantenimientoController::class);
-});
+//});
 Route::apiResource('roles', RolController::class);
 Route::apiResource('usuarios', UsuarioController::class);
 Route::apiResource('estados-habitacion', EstadoHabitacionController::class);
@@ -51,7 +53,7 @@ Route::apiResource('habitacion-amenidad',HabitacionAmenidadController::class)->o
 Route::apiResource('fuentes', FuenteController::class);
 Route::apiResource('tipos-doc', TipoDocController::class);
 Route::apiResource('estados-reserva', EstadoReservaController::class);
-Route::apiResource('clientes', ClienteController::class);
+//Route::apiResource('clientes', ClienteController::class);
 Route::apiResource('habitaciones', HabitacionController::class)->only(['index','show','store','update']);
 Route::apiResource('bloqueos', BloqueoOperativoController::class)->only(['index','show','store','destroy']);
 
@@ -144,3 +146,27 @@ Route::prefix('frontdesk')->group(function () {
   Route::get('/estadia/{estadia}',            [EstadiasController::class, 'show']);
   Route::get('/estadias',                     [EstadiasController::class, 'index']);
 });
+
+
+Route::prefix('clientes')->group(function () {
+    Route::get('/',            [ClienteController::class, 'index']);
+    Route::post('/',           [ClienteController::class, 'store']);
+    Route::get('{cliente}',    [ClienteController::class, 'show']);
+    Route::patch('{cliente}',    [ClienteController::class, 'update']);
+    Route::delete('{cliente}', [ClienteController::class, 'destroy']);
+
+    Route::get('por-doc/{numero_doc}',    [ClienteController::class, 'findByDocumento']);
+    Route::get('exists-doc/{numero_doc}', [ClienteController::class, 'existsByDocumento']);
+    Route::post('upsert-por-doc',         [ClienteController::class, 'upsertByDocumento']);
+});
+
+
+Route::prefix('clientes/{cliente}/wizard')
+    ->name('clientes.wizard.')
+    ->group(function () {
+        Route::patch('habitacion',   [ClienteWizardController::class, 'habitacion'])->name('habitacion');
+        Route::patch('perfil-viaje', [ClienteWizardController::class, 'perfilViaje'])->name('perfil_viaje');
+        Route::patch('salud',        [ClienteWizardController::class, 'salud'])->name('salud');
+        Route::patch('emergencia',   [ClienteWizardController::class, 'emergencia'])->name('emergencia');
+        Route::get('progreso',       [ClienteWizardController::class, 'progreso'])->name('progreso');
+    });
