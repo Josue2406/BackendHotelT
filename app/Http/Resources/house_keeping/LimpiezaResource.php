@@ -19,15 +19,37 @@ class LimpiezaResource extends JsonResource
             'fecha_final'       => optional($this->fecha_final)->toDateTimeString(),
             'fecha_reporte'     => optional($this->fecha_reporte)->toDateTimeString(),
 
+            'habitacion' => $this->whenLoaded('habitacion', function () {
+                return [
+                    'id'     => $this->habitacion->id_habitacion,
+                    'numero' => $this->habitacion->numero,
+                    'piso'   => $this->habitacion->piso,
+                    'tipo'   => $this->when(
+                        $this->habitacion->relationLoaded('tipo') && $this->habitacion->tipo,
+                        function () {
+                            return [
+                                'id_tipo_hab' => $this->habitacion->tipo->id_tipo_hab,
+                                'nombre'      => $this->habitacion->tipo->nombre,
+                                'descripcion' => $this->habitacion->tipo->descripcion,
+                                'created_at'  => optional($this->habitacion->tipo->created_at)?->toDateTimeString(),
+                                'updated_at'  => optional($this->habitacion->tipo->updated_at)?->toDateTimeString(),
+                            ];
+                        }
+                    ),
+                ];
+            }),
+
             'habitacion_id'     => $this->id_habitacion,
             'usuario_asigna_id' => $this->id_usuario_asigna,
             'usuario_reporta_id'=> $this->id_usuario_reporta,
-
-            // 👉 Solo ID de estado (el frontend decide qué mostrar)
-            'estado_id'         => $this->id_estado_hab,
-
-            // Opcional: nombre del estado si se cargó la relación
-            //'estado_nombre'     => $this->whenLoaded('estadoHabitacion', fn () => $this->estadoHabitacion->nombre),
+            'estado' => $this->whenLoaded('estadoHabitacion', function () {
+                return [
+                    'id'          => $this->estadoHabitacion->id_estado_hab ?? $this->estadoHabitacion->id,
+                    'nombre'      => $this->estadoHabitacion->nombre,
+                    'tipo'        => $this->estadoHabitacion->tipo,
+                    'descripcion' => $this->estadoHabitacion->descripcion,
+                ];
+            }),
 
             'created_at'        => optional($this->created_at)->toDateTimeString(),
             'updated_at'        => optional($this->updated_at)->toDateTimeString(),
