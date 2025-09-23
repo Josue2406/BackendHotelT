@@ -26,6 +26,10 @@ use App\Http\Controllers\Api\frontdesk\WalkInsController;
 use App\Http\Controllers\Api\frontdesk\ReservasCheckinController;
 use App\Http\Controllers\Api\frontdesk\EstadoEstadiaController;
 use App\Http\Controllers\Api\frontdesk\EstadiasController;
+use App\Http\Controllers\Api\reserva\AvailabilityController;
+use App\Http\Controllers\Api\reserva\TemporadaController;
+use App\Http\Controllers\Api\reserva\TemporadaReglaController;
+
 
 use App\Http\Controllers\Api\clientes\ClienteWizardController;
 use App\Http\Controllers\Api\Auth\AuthController;
@@ -58,10 +62,16 @@ Route::apiResource('habitaciones', HabitacionController::class)->only(['index','
 Route::apiResource('bloqueos', BloqueoOperativoController::class)->only(['index','show','store','destroy']);
 
 Route::get('disponibilidad', DisponibilidadController::class);
+Route::get('availability/search', [AvailabilityController::class, 'search']);
 
 
 // CRUD reserva
 Route::apiResource('reservas', ReservaController::class);
+
+Route::apiResource('temporadas', TemporadaController::class);
+
+Route::apiResource('temporada-reglas', TemporadaReglaController::class);
+
 
 // Habitaciones por reserva
 Route::get('reservas/{reserva}/habitaciones',      [ReservaHabitacionController::class, 'index']);
