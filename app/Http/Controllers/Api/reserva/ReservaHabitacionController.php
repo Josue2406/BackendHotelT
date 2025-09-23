@@ -5,7 +5,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\reserva\AddReservaHabitacionRequest;
 use App\Models\reserva\Reserva;
 use App\Models\reserva\ReservaHabitacion;
-use App\Models\reserva\Habitacione;
+use App\Models\habitacion\Habitacione;
 use App\Models\reserva\ReservaServicio;
 use App\Models\house_keeping\HabBloqueoOperativo;
 use App\Models\check_in\AsignacionHabitacion;
