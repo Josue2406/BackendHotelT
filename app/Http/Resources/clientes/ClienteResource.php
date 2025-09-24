@@ -6,7 +6,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class ClienteResource extends JsonResource
 {
     // Si quieres quitar el wrapper "data", descomenta:
-    // public static $wrap = null;
+    public static $wrap = null;
 
     public function toArray($request)
     {
@@ -25,7 +25,8 @@ class ClienteResource extends JsonResource
             'numero_doc'       => $this->numero_doc,
             'nacionalidad'     => $this->nacionalidad,
             'direccion'        => $this->direccion,
-            'fecha_nacimiento' => $this->fecha_nacimiento, // ya casteado a Y-m-d en el modelo
+            'fecha_nacimiento' => $this->fecha_nacimiento?->format('Y-m-d'),
+            //'fecha_nacimiento' => $this->fecha_nacimiento, // ya casteado a Y-m-d en el modelo
             'genero'           => $this->genero,
             'es_vip'         => $this->es_vip,
   'notas_personal' => $this->notas_personal,
