@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Api\house_keeping;
 
-use App\Events\LimpiezaCreada;
+use App\Events\NuevaLimpiezaAsignada;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\house_keeping\StoreLimpiezaRequest;
 use App\Http\Requests\house_keeping\UpdateLimpiezaRequest;
@@ -11,6 +11,7 @@ use App\Models\house_keeping\Limpieza;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use App\Services\house_keeping\LimpiezaService;
+
 class LimpiezaController extends Controller
 {
     protected $limpiezaService;
@@ -19,13 +20,14 @@ class LimpiezaController extends Controller
     {
         $this->limpiezaService = $limpiezaService;
     }
+
     /** GET /limpiezas */
     public function index(Request $request)
     {
         $perPage = (int) $request->input('per_page', 15);
 
         $query = Limpieza::with([
-            'habitacion',
+            'habitacion.tipo',   // 👈 importante
             'asignador',
             'reportante',
             'estadoHabitacion',
@@ -58,36 +60,35 @@ class LimpiezaController extends Controller
     /** POST /limpiezas */
     public function store(StoreLimpiezaRequest $request)
     {
-        // Tomar solo lo validado (no permitimos que el cliente mande fecha_reporte ni id_usuario_reporta)
         $data = $request->validated();
 
-        // Forzar siempre el usuario que reporta y la fecha de reporte desde backend
-        $reporterId = optional(auth()->user())->id_usuario ?? auth()->id(); // según tu esquema de usuarios
+        $reporterId = optional(auth()->user())->id_usuario ?? auth()->id();
         $data['id_usuario_reporta'] = $reporterId;
         $data['fecha_reporte']      = Carbon::now();
 
-        //$limpieza = Limpieza::create($data);
         $limpieza = $this->limpiezaService->crearLimpieza($data);
-        broadcast(new LimpiezaCreada([
-        //'id'         => $limpieza->id,
-        'habitacion' => $limpieza->habitacion->numero ?? 'N/A',
-        'asignado_a' => optional($limpieza->asignador)->nombre ?? 'Sin asignar',
-        'estado'     => optional($limpieza->estadoHabitacion)->nombre ?? 'Desconocido',
-        'fecha'      => $limpieza->fecha_inicio ?? now()->toDateTimeString(),
-        'prioridad'  => $limpieza->prioridad,
-    ]));
 
+        // Cargar relaciones (incluye tipo de habitación)
+        $limpieza->load(['habitacion.tipo','asignador','estadoHabitacion','reportante']);
 
-        return (new LimpiezaResource(
-            $limpieza->load(['habitacion','asignador','reportante','estadoHabitacion'])
-        ))->response()->setStatusCode(201);
+        event(new NuevaLimpiezaAsignada([
+            'id'         => $limpieza->id_limpieza ?? $limpieza->id ?? null,
+            'habitacion' => $limpieza->habitacion->numero ?? 'N/A',
+            'asignado_a' => optional($limpieza->asignador)->nombre ?? 'Sin asignar',
+            'estado'     => optional($limpieza->estadoHabitacion)->nombre ?? 'Desconocido',
+            'fecha'      => $limpieza->fecha_inicio ?? now()->toDateTimeString(),
+            'prioridad'  => $limpieza->prioridad,
+        ]));
+
+        return (new LimpiezaResource($limpieza))
+            ->response()->setStatusCode(201);
     }
 
     /** GET /limpiezas/{limpieza} */
     public function show(Limpieza $limpieza)
     {
         $limpieza->load([
-            'habitacion',
+            'habitacion.tipo',   // 👈
             'asignador',
             'reportante',
             'estadoHabitacion',
@@ -102,14 +103,12 @@ class LimpiezaController extends Controller
     {
         $data = $request->validated();
 
-        // Blindaje: aunque el cliente los envíe, NO permitimos cambios a estos campos
         unset($data['fecha_reporte'], $data['id_usuario_reporta']);
 
-        //$limpieza->update($data);
         $this->limpiezaService->actualizarLimpieza($limpieza, $data);
 
         return new LimpiezaResource(
-            $limpieza->fresh()->load(['habitacion','asignador','reportante','estadoHabitacion'])
+            $limpieza->fresh()->load(['habitacion.tipo','asignador','reportante','estadoHabitacion'])
         );
     }
 
@@ -122,7 +121,6 @@ class LimpiezaController extends Controller
 
     /**
      * PATCH /limpiezas/{limpieza}/finalizar
-     * Finaliza una limpieza estableciendo fecha_final (y opcionalmente notas).
      */
     public function finalizar(Request $request, Limpieza $limpieza)
     {

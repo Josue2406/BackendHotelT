@@ -36,13 +36,11 @@ class HabitacionAmenidad extends Model
 		'id_amenidad'
 	];
 
-	public function id_amenidad()
-	{
-		return $this->belongsTo(Amenidad::class, 'id_amenidad');
-	}
+public function habitacion() {
+    return $this->belongsTo(Habitacione::class, 'id_habitacion'); 
+}
 
-	public function id_habitacion()
-	{
-		return $this->belongsTo(Habitacione::class, 'id_habitacion');
-	}
+public function amenidad() {
+    return $this->belongsTo(Amenidad::class, 'id_amenidad');
+}
 }
