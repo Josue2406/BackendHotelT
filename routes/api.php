@@ -32,6 +32,9 @@ use App\Http\Controllers\Api\reserva\TemporadaReglaController;
 
 
 use App\Http\Controllers\Api\clientes\ClienteWizardController;
+use App\Http\Controllers\Api\clientes\ClienteFullController;
+
+
 use App\Http\Controllers\Api\Auth\AuthController;
 
 Route::post('/auth/login', [AuthController::class, 'login']);
@@ -160,7 +163,7 @@ Route::prefix('frontdesk')->group(function () {
 
 Route::prefix('clientes')->group(function () {
     Route::get('/',            [ClienteController::class, 'index']);
-    Route::post('/',           [ClienteController::class, 'store']);
+    //Route::post('/',           [ClienteController::class, 'store']);
     Route::get('{cliente}',    [ClienteController::class, 'show']);
     Route::patch('{cliente}',    [ClienteController::class, 'update']);
     Route::delete('{cliente}', [ClienteController::class, 'destroy']);
@@ -180,3 +183,12 @@ Route::prefix('clientes/{cliente}/wizard')
         Route::patch('emergencia',   [ClienteWizardController::class, 'emergencia'])->name('emergencia');
         Route::get('progreso',       [ClienteWizardController::class, 'progreso'])->name('progreso');
     });
+
+
+Route::prefix('clientes/full')
+    ->name('clientes.full.')
+    ->group(function () {
+        Route::post('/', [ClienteFullController::class, 'store'])->name('store');
+        // Agrega más rutas si es necesario (update, show, etc.)
+    });
+//Route::post('clientes/full', [ClienteFullController::class, 'store']);
