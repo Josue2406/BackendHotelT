@@ -15,9 +15,6 @@ class UpdateMantenimientoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'nombre'              => ['sometimes', 'string', 'max:100'],
-
-            'descripcion'         => ['sometimes', 'nullable', 'string', 'max:500'],
             'notas'               => ['sometimes', 'nullable', 'string', 'max:500'],
             'prioridad'           => ['sometimes', 'nullable', Rule::in(['baja','media','alta','urgente'])],
 
