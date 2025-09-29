@@ -7,6 +7,8 @@ use App\Http\Controllers\Api\usuario\RolController;
 use App\Http\Controllers\Api\usuario\UsuarioController;
 use App\Http\Controllers\Api\house_keeping\LimpiezaController;
 use App\Http\Controllers\Api\house_keeping\MantenimientoController;
+use App\Http\Controllers\Api\house_keeping\HistorialLimpiezaController;
+use App\Http\Controllers\Api\house_keeping\HistorialMantenimientoController;
 use App\Http\Controllers\Api\catalogo\EstadoHabitacionController;
 use App\Http\Controllers\Api\catalogo\TipoHabitacionController;
 use App\Http\Controllers\Api\catalogo\AmenidadController;
@@ -47,10 +49,21 @@ Route::middleware('auth:sanctum')->group(function () {
 
 //use App\Http\Controllers\Api\frontdesk\AsignacionHabitacion;
 
-//Route::middleware('auth:sanctum')->group(function () {
+Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('limpiezas', LimpiezaController::class);
     Route::apiResource('mantenimientos', MantenimientoController::class);
-//});
+});
+Route::apiResource('historial-limpiezas', HistorialLimpiezaController::class)
+    ->only(['index', 'show']);
+
+// Historial por limpieza específica
+Route::get('limpiezas/{id}/historial', [HistorialLimpiezaController::class, 'porLimpieza']);
+
+Route::apiResource('historial-mantenimientos', HistorialMantenimientoController::class)
+    ->only(['index', 'show']);
+
+Route::get('mantenimientos/{id}/historial', [HistorialMantenimientoController::class, 'porMantenimiento']);
+
 Route::apiResource('roles', RolController::class);
 Route::apiResource('usuarios', UsuarioController::class);
 Route::apiResource('estados-habitacion', EstadoHabitacionController::class);
