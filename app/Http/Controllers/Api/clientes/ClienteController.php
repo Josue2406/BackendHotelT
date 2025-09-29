@@ -18,7 +18,7 @@ class ClienteController extends Controller
         $perPage = (int) $r->query('perPage', 20);
 
         $clientes = Cliente::query()
-        ->with(['tipoDocumento','preferencias'])
+        ->with(['tipoDocumento','preferencias','perfilViaje', 'salud', 'contactoEmergencia'])
             ->search($r->query('search'))
             ->when($r->filled('id_tipo_doc'), fn ($q) => $q->where('id_tipo_doc', $r->query('id_tipo_doc')))
             ->when($r->filled('genero'), fn ($q) => $q->where('genero', $r->query('genero')))
@@ -51,6 +51,9 @@ class ClienteController extends Controller
         }
         $cliente->load('tipoDocumento');
         $cliente->load('preferencias');
+        $cliente->load('perfilViaje');
+        $cliente->load('salud');
+        $cliente->load('contactoEmergencia');
 
         return (new ClienteResource($cliente))->response()->setStatusCode(Response::HTTP_CREATED);
     }
@@ -68,6 +71,9 @@ class ClienteController extends Controller
         }
         $cliente->load('tipoDocumento');
         $cliente->load('preferencias');
+        $cliente->load('perfilViaje');
+        $cliente->load('salud');
+        $cliente->load('contactoEmergencia');
 
         return new ClienteResource($cliente);
     }
@@ -82,7 +88,7 @@ class ClienteController extends Controller
     /** GET /api/clientes/por-doc/{numero_doc} */
     public function findByDocumento(string $numero_doc)
     {
-        $cliente = Cliente::with(['tipoDocumento','preferencias'])
+        $cliente = Cliente::with(['tipoDocumento','preferencias', 'perfilViaje', 'salud', 'contactoEmergencia'])
         ->where('numero_doc', $numero_doc)
         ->first();
 
