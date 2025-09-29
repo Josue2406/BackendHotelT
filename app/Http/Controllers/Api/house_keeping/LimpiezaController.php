@@ -100,24 +100,54 @@ class LimpiezaController extends Controller
 
     /** PUT/PATCH /limpiezas/{limpieza} */
     public function update(UpdateLimpiezaRequest $request, Limpieza $limpieza)
-    {
-        $data = $request->validated();
+{
+    $data = $request->validated();
 
-        unset($data['fecha_reporte'], $data['id_usuario_reporta']);
+    // Campos que pueden limpiarse si no vienen en request
+    $nullableCampos = [
+        //'fecha_inicio',
+        'fecha_final',
+        'notas',
+        'prioridad',
+       // 'id_usuario_asigna',
+        //'id_estado_hab',
+    ];
 
-        $this->limpiezaService->actualizarLimpieza($limpieza, $data);
-
-        return new LimpiezaResource(
-            $limpieza->fresh()->load(['habitacion.tipo','asignador','reportante','estadoHabitacion'])
-        );
+    foreach ($nullableCampos as $campo) {
+        if (!array_key_exists($campo, $data)) {
+            $data[$campo] = null;
+        }
     }
 
-    /** DELETE /limpiezas/{limpieza} */
-    public function destroy(Limpieza $limpieza)
-    {
-        $limpieza->delete();
-        return response()->noContent();
+    // 🔒 Siempre setear quién y cuándo reporta al actualizar
+    $data['id_usuario_reporta'] = optional(auth()->user())->id_usuario ?? auth()->id();
+    $data['fecha_reporte'] = Carbon::now();
+
+    // Hacer update
+    $this->limpiezaService->actualizarLimpieza($limpieza, $data);
+
+    // Recargar relaciones
+    $limpieza->refresh()->load([
+        'habitacion.tipo',
+        'asignador',        // quien recibe la limpieza
+        'reportante',       // quien la reporta (última actualización)
+        'estadoHabitacion',
+    ]);
+
+    // Evento si cambia la asignación
+    if ($limpieza->wasChanged('id_usuario_asigna') && $limpieza->id_usuario_asigna !== null) {
+        event(new NuevaLimpiezaAsignada([
+            'id'         => $limpieza->id_limpieza ?? $limpieza->id,
+            'habitacion' => $limpieza->habitacion->numero ?? 'N/A',
+            'asignado_a' => optional($limpieza->asignador)->nombre ?? 'Sin asignar',
+            'estado'     => optional($limpieza->estadoHabitacion)->nombre ?? 'Desconocido',
+            'fecha'      => $limpieza->fecha_inicio ?? now()->toDateTimeString(),
+            'prioridad'  => $limpieza->prioridad,
+        ]));
     }
+
+    return new LimpiezaResource($limpieza);
+}
 
     /**
      * PATCH /limpiezas/{limpieza}/finalizar

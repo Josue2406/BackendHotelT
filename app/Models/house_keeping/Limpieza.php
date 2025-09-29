@@ -13,10 +13,8 @@ use App\Models\habitacion\EstadoHabitacion; // <-- nuevo import
  * Class Limpieza
  *
  * @property int $id_limpieza
- * @property string $nombre
  * @property Carbon $fecha_inicio
  * @property Carbon|null $fecha_final
- * @property string|null $descripcion
  * @property Carbon $fecha_reporte
  * @property string|null $notas
  * @property string|null $prioridad
@@ -43,10 +41,8 @@ class Limpieza extends Model
     ];
 
     protected $fillable = [
-        'nombre',
         'fecha_inicio',
         'fecha_final',
-        'descripcion',
         'fecha_reporte',
         'notas',
         'prioridad',
