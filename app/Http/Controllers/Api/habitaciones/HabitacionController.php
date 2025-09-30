@@ -5,16 +5,40 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\habitaciones\StoreHabitacionRequest;
 use App\Http\Requests\habitaciones\UpdateHabitacionRequest;
 use App\Models\habitacion\Habitacione;
-
+use App\Services\house_keeping\RegistroAutomaticoDeLimpiezaService;
+use App\Services\house_keeping\RegistroAutomaticoDeMantenimientoService;
 class HabitacionController extends Controller
 {
+    
+    protected RegistroAutomaticoDeLimpiezaService $registroLimpieza;
+
+    protected RegistroAutomaticoDeMantenimientoService $registroMtto;
+
+public function __construct(
+    RegistroAutomaticoDeLimpiezaService $registroLimpieza,
+    RegistroAutomaticoDeMantenimientoService $registroMtto
+) {
+    $this->registroLimpieza = $registroLimpieza;
+    $this->registroMtto = $registroMtto;
+}
     public function index() { return Habitacione::with(['estado','tipo'])->orderBy('numero')->paginate(20); }
     public function show(Habitacione $habitacione) { return $habitacione->load(['estado','tipo']); }
 
-    public function store(StoreHabitacionRequest $r) {
-        return response()->json(Habitacione::create($r->validated()), 201);
-    }
+    // public function store(StoreHabitacionRequest $r) {
+    //     return response()->json(Habitacione::create($r->validated()), 201);
 
+    // }
+public function store(StoreHabitacionRequest $r)
+{
+    // Crear la habitación normalmente
+    $habitacion = Habitacione::create($r->validated());
+
+    // Crear automáticamente el registro de limpieza vacío asociado a esta habitación
+    $this->registroLimpieza->crearDesdeNuevaHabitacion($habitacion->id_habitacion);
+    $this->registroMtto->crearDesdeNuevaHabitacion($habitacion->id_habitacion);
+
+    return response()->json($habitacion, 201);
+}
     public function update(UpdateHabitacionRequest $r, Habitacione $habitacione) {
         $habitacione->update($r->validated());
         return $habitacione->fresh();
