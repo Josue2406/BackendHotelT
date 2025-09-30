@@ -202,6 +202,28 @@ Route::prefix('clientes/full')
     ->name('clientes.full.')
     ->group(function () {
         Route::post('/', [ClienteFullController::class, 'store'])->name('store');
+        Route::put('{cliente}', [ClienteFullController::class, 'update'])->name('update');
         // Agrega más rutas si es necesario (update, show, etc.)
     });
 //Route::post('clientes/full', [ClienteFullController::class, 'store']);
+
+
+//-------------------------------------------FOLIO-------------------------------------------------
+use App\Http\Controllers\Api\folio\FolioResumenController;
+Route::get('/folios/{id}/resumen', [FolioResumenController::class, 'show']);
+
+use App\Http\Controllers\Api\folio\FolioDistribucionController;
+
+Route::post('/folios/{id}/distribuir', [FolioDistribucionController::class, 'distribuir']);
+
+use App\Http\Controllers\Api\folio\FolioPagosController;
+
+Route::post('/folios/{id}/pagos', [FolioPagosController::class, 'store']);
+
+use App\Http\Controllers\Api\folio\FolioCierreController;
+
+Route::post('/folios/{id}/cerrar', [FolioCierreController::class, 'cerrar']);
+
+use App\Http\Controllers\Api\folio\FolioHistorialController;
+
+Route::get('/folios/{id}/historial', [FolioHistorialController::class, 'index']);
