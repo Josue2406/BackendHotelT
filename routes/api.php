@@ -6,6 +6,8 @@ use App\Http\Controllers\Api\usuario\RolController;
 use App\Http\Controllers\Api\usuario\UsuarioController;
 use App\Http\Controllers\Api\house_keeping\LimpiezaController;
 use App\Http\Controllers\Api\house_keeping\MantenimientoController;
+use App\Http\Controllers\Api\house_keeping\HistorialLimpiezaController;
+use App\Http\Controllers\Api\house_keeping\HistorialMantenimientoController;
 use App\Http\Controllers\Api\catalogo\EstadoHabitacionController;
 use App\Http\Controllers\Api\catalogo\TipoHabitacionController;
 use App\Http\Controllers\Api\catalogo\AmenidadController;
@@ -26,8 +28,15 @@ use App\Http\Controllers\Api\frontdesk\WalkInsController;
 use App\Http\Controllers\Api\frontdesk\ReservasCheckinController;
 use App\Http\Controllers\Api\frontdesk\EstadoEstadiaController;
 use App\Http\Controllers\Api\frontdesk\EstadiasController;
+use App\Http\Controllers\Api\reserva\AvailabilityController;
+use App\Http\Controllers\Api\reserva\TemporadaController;
+use App\Http\Controllers\Api\reserva\TemporadaReglaController;
+
 
 use App\Http\Controllers\Api\clientes\ClienteWizardController;
+use App\Http\Controllers\Api\clientes\ClienteFullController;
+
+
 use App\Http\Controllers\Api\Auth\AuthController;
 
 Route::post('/auth/login', [AuthController::class, 'login']);
@@ -40,10 +49,21 @@ Route::middleware('auth:sanctum')->group(function () {
 
 //use App\Http\Controllers\Api\frontdesk\AsignacionHabitacion;
 
-//Route::middleware('auth:sanctum')->group(function () {
+Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('limpiezas', LimpiezaController::class);
     Route::apiResource('mantenimientos', MantenimientoController::class);
-//});
+});
+Route::apiResource('historial-limpiezas', HistorialLimpiezaController::class)
+    ->only(['index', 'show']);
+
+// Historial por limpieza específica
+Route::get('limpiezas/{id}/historial', [HistorialLimpiezaController::class, 'porLimpieza']);
+
+Route::apiResource('historial-mantenimientos', HistorialMantenimientoController::class)
+    ->only(['index', 'show']);
+
+Route::get('mantenimientos/{id}/historial', [HistorialMantenimientoController::class, 'porMantenimiento']);
+
 Route::apiResource('roles', RolController::class);
 Route::apiResource('usuarios', UsuarioController::class);
 Route::apiResource('estados-habitacion', EstadoHabitacionController::class);
@@ -58,10 +78,16 @@ Route::apiResource('habitaciones', HabitacionController::class)->only(['index','
 Route::apiResource('bloqueos', BloqueoOperativoController::class)->only(['index','show','store','destroy']);
 
 Route::get('disponibilidad', DisponibilidadController::class);
+Route::get('availability/search', [AvailabilityController::class, 'search']);
 
 
 // CRUD reserva
 Route::apiResource('reservas', ReservaController::class);
+
+Route::apiResource('temporadas', TemporadaController::class);
+
+Route::apiResource('temporada-reglas', TemporadaReglaController::class);
+
 
 // Habitaciones por reserva
 Route::get('reservas/{reserva}/habitaciones',      [ReservaHabitacionController::class, 'index']);
@@ -151,7 +177,7 @@ Route::prefix('frontdesk')->group(function () {
 
 Route::prefix('clientes')->group(function () {
     Route::get('/',            [ClienteController::class, 'index']);
-    Route::post('/',           [ClienteController::class, 'store']);
+    //Route::post('/',           [ClienteController::class, 'store']);
     Route::get('{cliente}',    [ClienteController::class, 'show']);
     Route::patch('{cliente}',    [ClienteController::class, 'update']);
     Route::delete('{cliente}', [ClienteController::class, 'destroy']);
@@ -171,3 +197,34 @@ Route::prefix('clientes/{cliente}/wizard')
         Route::patch('emergencia',   [ClienteWizardController::class, 'emergencia'])->name('emergencia');
         Route::get('progreso',       [ClienteWizardController::class, 'progreso'])->name('progreso');
     });
+
+
+Route::prefix('clientes/full')
+    ->name('clientes.full.')
+    ->group(function () {
+        Route::post('/', [ClienteFullController::class, 'store'])->name('store');
+        Route::put('{cliente}', [ClienteFullController::class, 'update'])->name('update');
+        // Agrega más rutas si es necesario (update, show, etc.)
+    });
+//Route::post('clientes/full', [ClienteFullController::class, 'store']);
+
+
+//-------------------------------------------FOLIO-------------------------------------------------
+use App\Http\Controllers\Api\folio\FolioResumenController;
+Route::get('/folios/{id}/resumen', [FolioResumenController::class, 'show']);
+
+use App\Http\Controllers\Api\folio\FolioDistribucionController;
+
+Route::post('/folios/{id}/distribuir', [FolioDistribucionController::class, 'distribuir']);
+
+use App\Http\Controllers\Api\folio\FolioPagosController;
+
+Route::post('/folios/{id}/pagos', [FolioPagosController::class, 'store']);
+
+use App\Http\Controllers\Api\folio\FolioCierreController;
+
+Route::post('/folios/{id}/cerrar', [FolioCierreController::class, 'cerrar']);
+
+use App\Http\Controllers\Api\folio\FolioHistorialController;
+
+Route::get('/folios/{id}/historial', [FolioHistorialController::class, 'index']);

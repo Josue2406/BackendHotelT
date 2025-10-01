@@ -8,7 +8,8 @@ namespace App\Models\house_keeping;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
-
+use App\Models\usuario\User;
+use App\Models\house_keeping\Mantenimiento;
 /**
  * Class HistorialMantenimiento
  * 
@@ -45,13 +46,14 @@ class HistorialMantenimiento extends Model
 		'valor_nuevo'
 	];
 
-	public function actor_id()
-	{
-		return $this->belongsTo(User::class, 'actor_id');
-	}
+	public function actor()
+    {
+        return $this->belongsTo(User::class, 'actor_id', 'id_usuario');
+    }
 
-	public function id_mantenimiento()
-	{
-		return $this->belongsTo(Mantenimiento::class, 'id_mantenimiento');
-	}
+    // Relación con el mantenimiento
+    public function mantenimiento()
+    {
+        return $this->belongsTo(Mantenimiento::class, 'id_mantenimiento', 'id_mantenimiento');
+    }
 }

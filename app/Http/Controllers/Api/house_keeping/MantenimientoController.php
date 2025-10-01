@@ -74,14 +74,14 @@ public function __construct(MantenimientoService $service)
     $mtto->load(['habitacion','asignador','reportante','estadoHabitacion']);
 
     // 5) Emitir evento de broadcast (usa broadcast() si quieres excluir al emisor actual)
-    event(new NuevoMantenimientoAsignado([
-        'id'         => $mtto->id_mantenimiento ?? $mtto->id ?? null,
-        'habitacion' => $mtto->habitacion->numero ?? 'N/A',
-        'asignado_a' => optional($mtto->asignador)->nombre ?? 'Sin asignar',
-        'estado'     => optional($mtto->estadoHabitacion)->nombre ?? 'Desconocido',
-        'fecha'      => $mtto->fecha_inicio ?? now()->toDateTimeString(),
-        'prioridad'  => $mtto->prioridad ?? null,
-    ]));
+    // event(new NuevoMantenimientoAsignado([
+    //     'id'         => $mtto->id_mantenimiento ?? $mtto->id ?? null,
+    //     'habitacion' => $mtto->habitacion->numero ?? 'N/A',
+    //     'asignado_a' => optional($mtto->asignador)->nombre ?? 'Sin asignar',
+    //     'estado'     => optional($mtto->estadoHabitacion)->nombre ?? 'Desconocido',
+    //     'fecha'      => $mtto->fecha_inicio ?? now()->toDateTimeString(),
+    //     'prioridad'  => $mtto->prioridad ?? null,
+    // ]));
 
     // 6) Respuesta API
     return (new MantenimientoResource(
@@ -105,19 +105,56 @@ public function __construct(MantenimientoService $service)
 
     /** PUT/PATCH /mantenimientos/{mantenimiento} */
     public function update(UpdateMantenimientoRequest $request, Mantenimiento $mantenimiento)
-    {
-        $data = $request->validated();
+{
+    $data = $request->validated();
 
-        // Blindaje: NO permitir editar fecha_reporte ni id_usuario_reporta
-        unset($data['fecha_reporte'], $data['id_usuario_reporta']);
-        $this->service->registrarActualizacion($mantenimiento, $data);
+    // Campos que pueden ser "limpiados" si no vienen en el request
+    $nullableCampos = [
+        //'fecha_inicio',
+        'fecha_final',
+        'notas',
+        'prioridad',
+        //'id_usuario_asigna',
+        //'id_estado_hab',
+    ];
 
-        $mantenimiento->update($data);
-
-        return new MantenimientoResource(
-            $mantenimiento->fresh()->load(['habitacion','asignador','reportante','estadoHabitacion'])
-        );
+    foreach ($nullableCampos as $campo) {
+        if (!array_key_exists($campo, $data)) {
+            $data[$campo] = null;
+        }
     }
+
+    //  Siempre sobreescribir usuario que reporta y fecha de reporte
+    $data['id_usuario_reporta'] = optional(auth()->user())->id_usuario ?? auth()->id();
+    $data['fecha_reporte'] = Carbon::now();
+    // Verificar si hubo cambio en la asignación
+    $asignacionAnterior = $mantenimiento->id_usuario_asigna ?? null;
+    $asignacionNueva = $data['id_usuario_asigna'] ?? $asignacionAnterior;
+
+    // Actualizar y registrar historial
+    $mantenimiento->update($data);
+    $this->service->registrarActualizacion($mantenimiento, $data);
+
+    // Respuesta con relaciones actualizadas
+    return new MantenimientoResource(
+        $mantenimiento->fresh()->load([
+            'habitacion',
+            'asignador',
+            'reportante',
+            'estadoHabitacion',
+        ])
+    );
+    if ($asignacionAnterior !== $asignacionNueva && $asignacionNueva !== null) {
+        event(new NuevoMantenimientoAsignado([
+            'id'         => $mantenimiento->id_mantenimiento ?? $mantenimiento->id,
+            'habitacion' => $mantenimiento->habitacion->numero ?? 'N/A',
+            'asignado_a' => optional($mantenimiento->asignador)->nombre ?? 'Sin asignar',
+            'estado'     => optional($mantenimiento->estadoHabitacion)->nombre ?? 'Desconocido',
+            'fecha'      => $mantenimiento->fecha_inicio ?? now()->toDateTimeString(),
+            'prioridad'  => $mantenimiento->prioridad ?? null,
+        ]));
+    }
+}
 
     /** DELETE /mantenimientos/{mantenimiento} */
     public function destroy(Mantenimiento $mantenimiento)

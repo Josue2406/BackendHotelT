@@ -13,6 +13,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use App\Models\house_keeping\HistorialLimpieza;
+use App\Models\house_keeping\HistorialMantenimiento;
+use App\Models\house_keeping\Limpieza;
+use App\Models\house_keeping\Mantenimiento;
 /**
  * Class User
  * 
@@ -61,14 +65,14 @@ class User extends Authenticatable
         return $this->belongsTo(Rol::class, 'id_rol', 'id_rol');
     }
 
-	public function historial_limpiezas_where_actor_id()
+	public function historialLimpiezas()
 	{
-		return $this->hasMany(HistorialLimpieza::class, 'actor_id');
+		return $this->hasMany(HistorialLimpieza::class, 'actor_id', 'id_usuario' );
 	}
 
-	public function historial_mantenimientos_where_actor_id()
+	public function historialMantenimientos()
 	{
-		return $this->hasMany(HistorialMantenimiento::class, 'actor_id');
+		return $this->hasMany(HistorialMantenimiento::class, 'actor_id', 'id_usuario' );
 	}
 
 	public function limpiezas_where_id_usuario_asigna()
