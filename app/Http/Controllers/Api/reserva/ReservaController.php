@@ -18,19 +18,69 @@ use Illuminate\Support\Facades\DB;
 class ReservaController extends Controller
 {
     public function index() {
-        return Reserva::with(['cliente','estado','fuente'])
+        return Reserva::with(['cliente','estado','fuente','habitaciones.habitacion'])
             ->latest('id_reserva')->paginate(20);
     }
 
     public function show(Reserva $reserva) {
-        return $reserva->load(['cliente','estado','fuente','habitaciones','servicios','politicas']);
+        return $reserva->load(['cliente','estado','fuente','habitaciones.habitacion','servicios','politicas']);
     }
 
     public function store(StoreReservaRequest $r) {
         $data = $r->validated();
-        $data['fecha_creacion'] = now();
-        $reserva = Reserva::create($data);
-        return response()->json($reserva->fresh(), 201);
+
+        return DB::transaction(function () use ($data) {
+            // 1) Extraer habitaciones del request
+            $habitaciones = $data['habitaciones'];
+            unset($data['habitaciones']);
+
+            // 2) Crear la reserva (sin total_monto_reserva todavía)
+            $data['fecha_creacion'] = now();
+            $data['total_monto_reserva'] = 0; // Se calculará después
+            $reserva = Reserva::create($data);
+
+            $totalReserva = 0;
+
+            // 3) Crear habitaciones y calcular precios
+            foreach ($habitaciones as $hab) {
+                // Validar disponibilidad
+                $choqueReserva = ReservaHabitacion::where('id_habitacion', $hab['id_habitacion'])
+                    ->where('fecha_llegada', '<', $hab['fecha_salida'])
+                    ->where('fecha_salida', '>', $hab['fecha_llegada'])
+                    ->exists();
+
+                if ($choqueReserva) {
+                    throw new \Exception("La habitación {$hab['id_habitacion']} no está disponible en el rango especificado.");
+                }
+
+                // Crear la habitación
+                $reservaHab = $reserva->habitaciones()->create([
+                    'id_habitacion' => $hab['id_habitacion'],
+                    'fecha_llegada' => $hab['fecha_llegada'],
+                    'fecha_salida'  => $hab['fecha_salida'],
+                    'adultos'       => $hab['adultos'],
+                    'ninos'         => $hab['ninos'],
+                    'bebes'         => $hab['bebes'],
+                    'subtotal'      => 0, // Se calculará a continuación
+                ]);
+
+                // Calcular subtotal de esta habitación
+                $reservaHab->load('habitacion.tipoHabitacion');
+                $subtotal = $reservaHab->calcularSubtotal();
+                $reservaHab->update(['subtotal' => $subtotal]);
+
+                $totalReserva += $subtotal;
+            }
+
+            // 4) Actualizar total de la reserva
+            $reserva->update(['total_monto_reserva' => $totalReserva]);
+
+            // 5) Retornar reserva completa
+            return response()->json(
+                $reserva->fresh()->load(['cliente', 'estado', 'fuente', 'habitaciones.habitacion.tipoHabitacion']),
+                201
+            );
+        });
     }
 
     public function update(UpdateReservaRequest $r, Reserva $reserva) {
