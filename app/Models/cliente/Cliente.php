@@ -3,11 +3,18 @@
 namespace App\Models\cliente;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable; // ← autenticable
+use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Notifications\Notifiable;
+use App\Notifications\ClienteResetPassword;
 
-class Cliente extends Model
+class Cliente extends Authenticatable
 {
+    use HasApiTokens, Notifiable;
+
     protected $table = 'clientes';
     protected $primaryKey = 'id_cliente';
+
 
     // Campos que se pueden asignar en masa
     protected $fillable = [
@@ -15,6 +22,7 @@ class Cliente extends Model
         'apellido1',
         'apellido2',
         'email',
+        'password',
         'telefono',
         'id_tipo_doc',       // FK a tipos_documento (si lo usas)
         'numero_doc',
@@ -24,6 +32,8 @@ class Cliente extends Model
         'genero',
         'es_vip','notas_personal',   // ← IMPORTANTES
     ];
+
+    protected $hidden = ['password','remember_token'];
 
     // Casts útiles
     protected $casts = [
@@ -106,7 +116,9 @@ public function contactoEmergencia() {
     return $this->hasOne(\App\Models\cliente\ClienteContactoEmergencia::class, 'id_cliente', 'id_cliente');
 }
 
-
-
+public function sendPasswordResetNotification($token)
+    {
+        $this->notify(new ClienteResetPassword($token));
+    }
 
 }

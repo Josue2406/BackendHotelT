@@ -13,7 +13,7 @@ class CheckinFromReservaRequest extends FormRequest
             'id_hab'             => 'required|integer|exists:habitaciones,id_habitacion',
             'fecha_llegada'      => 'required|date',
             'fecha_salida'       => 'required|date|after:fecha_llegada',
-            'adultos'            => 'required|integer|min:1',
+            'adultos'            => 'nullable|integer|min:1',
             'ninos'              => 'nullable|integer|min:0',
             'bebes'              => 'nullable|integer|min:0',
             'id_estado_estadia'  => 'nullable|integer|exists:estado_estadia,id_estado_estadia',

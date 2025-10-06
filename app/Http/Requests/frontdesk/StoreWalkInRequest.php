@@ -17,7 +17,7 @@ class StoreWalkInRequest extends FormRequest
             'ninos'              => 'nullable|integer|min:0',
             'bebes'              => 'nullable|integer|min:0',
             'id_estado_estadia'  => 'nullable|integer|exists:estado_estadia,id_estado_estadia',
-            'nombre_asignacion'  => 'nullable|string|max:30',
+            //'nombre_asignacion'  => 'nullable|string|max:30',
             'observacion_checkin'=> 'nullable|string|max:300',
         ];
     }
