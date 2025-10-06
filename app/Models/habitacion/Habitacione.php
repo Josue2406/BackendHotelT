@@ -122,4 +122,9 @@ public function tipo()
     return $this->tipo_habitacion_id();
 }
 
+public function tipoHabitacion()
+{
+    return $this->tipo_habitacion_id();
+}
+
 }

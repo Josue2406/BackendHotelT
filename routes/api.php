@@ -64,8 +64,9 @@ Route::get('disponibilidad', DisponibilidadController::class);
 Route::apiResource('reservas', ReservaController::class);
 
 // Habitaciones por reserva
-Route::get('reservas/{reserva}/habitaciones',      [ReservaHabitacionController::class, 'index']);
-Route::post('reservas/{reserva}/habitaciones',     [ReservaHabitacionController::class, 'store']);
+Route::get('reservas/{reserva}/habitaciones',         [ReservaHabitacionController::class, 'index']);
+Route::post('reservas/{reserva}/habitaciones',        [ReservaHabitacionController::class, 'store']);
+Route::put('reservas/{reserva}/habitaciones/{id}',    [ReservaHabitacionController::class, 'update']);
 Route::delete('reservas/{reserva}/habitaciones/{id}', [ReservaHabitacionController::class, 'destroy']);
 
 // Servicios por reserva
