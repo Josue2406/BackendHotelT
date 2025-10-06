@@ -11,14 +11,19 @@ return new class extends Migration {
             $table->string('nombre', 60);
             $table->string('apellido1', 60);
             $table->string('apellido2', 60)->nullable();
-            $table->string('email', 50)->unique();
-            $table->string('telefono', 50)->unique();
+            $table->string('email', 150)->unique();
+            $table->string('password');// hash bcrypt
+            $table->rememberToken(); // crea remember_token
+            $table->string('telefono', 50)->nullable()->unique();
             $table->unsignedBigInteger('id_tipo_doc')->nullable();
-          $table->string('numero_doc', 40)->nullable();
-            $table->string('nacionalidad', 60);
+          $table->string('numero_doc', 40)->nullable()->index(); // o ->unique()
+             $table->string('nacionalidad', 60)->nullable();
             $table->string('direccion', 200)->nullable();
-            $table->date('fecha_nacimiento', 40)->nullable();
-            $table->string('genero')->nullable();
+            $table->date('fecha_nacimiento')->nullable();          // ← sin “40”
+            $table->string('genero', 1)->nullable();
+             // Campos que tu modelo expone
+            $table->boolean('es_vip')->default(false);
+            $table->text('notas_personal')->nullable();
             $table->timestamps();
 
             $table->foreign('id_tipo_doc')->references('id_tipo_doc')->on('tipo_doc')->nullOnDelete()->cascadeOnUpdate();
