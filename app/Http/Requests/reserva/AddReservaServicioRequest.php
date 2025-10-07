@@ -10,7 +10,8 @@ class AddReservaServicioRequest extends FormRequest
         return [
             'id_servicio'    => 'required|integer|exists:servicio,id_servicio',
             'cantidad'       => 'required|integer|min:1',
-            'precio_unitario'=> 'required|numeric|min:0',
+            'precio_unitario'=> 'nullable|numeric|min:0', // Opcional, se toma del servicio si no se envía
+            'fecha_servicio' => 'nullable|date',
             'descripcion'    => 'nullable|string|max:200',
         ];
     }
