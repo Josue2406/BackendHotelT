@@ -39,6 +39,11 @@ use App\Http\Controllers\Api\clientes\ClienteFullController;
 
 use App\Http\Controllers\Api\Auth\AuthController;
 
+use App\Http\Controllers\Api\Clientes\AuthClienteController;
+use App\Http\Controllers\Api\Clientes\PasswordResetClienteController;
+use App\Http\Controllers\Api\Huespedes\HuespedController;   // ← IMPORTANTE
+use App\Http\Controllers\Api\Clientes\ClienteIntakeController; // ← si usarás perfil-completo
+
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/register', [AuthController::class, 'register']);
 
@@ -90,8 +95,9 @@ Route::apiResource('temporada-reglas', TemporadaReglaController::class);
 
 
 // Habitaciones por reserva
-Route::get('reservas/{reserva}/habitaciones',      [ReservaHabitacionController::class, 'index']);
-Route::post('reservas/{reserva}/habitaciones',     [ReservaHabitacionController::class, 'store']);
+Route::get('reservas/{reserva}/habitaciones',         [ReservaHabitacionController::class, 'index']);
+Route::post('reservas/{reserva}/habitaciones',        [ReservaHabitacionController::class, 'store']);
+Route::put('reservas/{reserva}/habitaciones/{id}',    [ReservaHabitacionController::class, 'update']);
 Route::delete('reservas/{reserva}/habitaciones/{id}', [ReservaHabitacionController::class, 'destroy']);
 
 // Servicios por reserva
@@ -197,14 +203,21 @@ Route::prefix('clientes/{cliente}/wizard')
         Route::get('progreso',       [ClienteWizardController::class, 'progreso'])->name('progreso');
     });
 
-
+/*
 Route::prefix('clientes/full')
     ->name('clientes.full.')
     ->group(function () {
         Route::post('/', [ClienteFullController::class, 'store'])->name('store');
         Route::put('{cliente}', [ClienteFullController::class, 'update'])->name('update');
+ });
+        */
+        Route::prefix('clientes/full')
+        ->group(function () {
+    Route::post('/', [ClienteFullController::class, 'store']);   // idempotente
+    Route::put('{cliente}', [ClienteFullController::class, 'update']); // si lo usas
+});
+
         // Agrega más rutas si es necesario (update, show, etc.)
-    });
 //Route::post('clientes/full', [ClienteFullController::class, 'store']);
 
 
@@ -227,3 +240,67 @@ Route::post('/folios/{id}/cerrar', [FolioCierreController::class, 'cerrar']);
 use App\Http\Controllers\Api\folio\FolioHistorialController;
 
 Route::get('/folios/{id}/historial', [FolioHistorialController::class, 'index']);
+//-------------------------------------------------------------------------------------------------
+
+use App\Http\Controllers\Api\frontdesk\ClientesLookupController;
+
+Route::get('/frontdesk/clientes/_lookup', [ClientesLookupController::class, 'show'])
+    ->name('frontdesk.clientes.lookup');
+
+
+
+// routes/api.php
+
+
+
+Route::prefix('clientes')->group(function () {
+    // Registro + Login
+    Route::post('auth/register', [AuthClienteController::class, 'register']);
+   /* Route::post('auth/login',    [AuthClienteController::class, 'login'])
+    ->middleware('throttle:login');
+    */
+
+    Route::post('auth/login', [AuthClienteController::class, 'login'])
+    ->middleware('throttle:5,1'); // 5 intentos x 1 minuto por IP
+
+    
+// Crear huésped (independiente del cliente)
+Route::post('huespedes', [HuespedController::class, 'store']);
+
+// Login con draft (ya lo tienes)
+    //Route::post('clientes/auth/login', [AuthClienteController::class, 'login']);
+
+    // Password reset (enviar correo y resetear)
+    Route::post('password/forgot', [PasswordResetClienteController::class, 'sendResetLink']);
+    Route::post('password/reset',  [PasswordResetClienteController::class, 'resetPassword']);
+
+    // Rutas protegidas por token
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('auth/me',     [AuthClienteController::class, 'me']);
+        Route::post('auth/logout',[AuthClienteController::class, 'logout']);
+        // aquí puedes añadir más endpoints del cliente autenticado
+
+
+    /* routes/api.php
+Route::middleware('auth:sanctum')->prefix('clientes')->group(function () {
+    Route::post('full', [ClienteFullController::class, 'store']); // ahora “store” = update del autenticado
+});*/
+Route::middleware('auth:sanctum')->post('clientes/full', [ClienteFullController::class,'store']);
+
+
+      
+    });
+});
+
+
+Route::prefix('clientes')->group(function () {
+   
+    // Crear huésped (independiente del cliente)
+    Route::post('huespedes', [HuespedController::class, 'store']);
+
+    // (Opcional) Perfil completo 6 secciones en un solo POST
+    Route::post('perfil-completo', [ClienteIntakeController::class, 'submit'])
+        ->middleware('auth:sanctum'); // recomendado
+
+   
+});

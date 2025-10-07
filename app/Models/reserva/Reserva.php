@@ -17,28 +17,25 @@ use App\Models\reserva\ReservaHabitacion;
 use App\Models\reserva\ReservaPolitica;
 use App\Models\reserva\ReservaPago;
 use App\Models\check_in\AsignacionHabitacion;
-use App\Models\estadia\Estadia;   // revisa el nombre real de la clase
+use App\Models\estadia\Estadia;
 use App\Models\reserva\Servicio;
 
 
 /**
  * Class Reserva
- * 
+ *
  * @property int $id_reserva
  * @property int $id_cliente
  * @property int $id_estado_res
  * @property Carbon $fecha_creacion
  * @property float $total_monto_reserva
  * @property string|null $notas
- * @property int $adultos
- * @property int $ninos
- * @property int $bebes
  * @property int|null $id_fuente
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * 
+ *
  * @property Collection|AsignacionHabitacion[] $asignacion_habitacions_where_id_reserva
- * @property Collection|Estadium[] $estadia_where_id_reserva
+ * @property Collection|Estadia[] $estadia_where_id_reserva
  * @property Collection|ReservaHabitacion[] $reserva_habitacions_where_id_reserva
  * @property Collection|ReservaPago[] $reserva_pagos_where_id_reserva
  * @property Collection|ReservaPolitica[] $reserva_politicas_where_id_reserva
@@ -56,9 +53,6 @@ class Reserva extends Model
 		'id_estado_res' => 'int',
 		'fecha_creacion' => 'datetime',
 		'total_monto_reserva' => 'float',
-		'adultos' => 'int',
-		'ninos' => 'int',
-		'bebes' => 'int',
 		'id_fuente' => 'int'
 	];
 
@@ -68,9 +62,6 @@ class Reserva extends Model
 		'fecha_creacion',
 		'total_monto_reserva',
 		'notas',
-		'adultos',
-		'ninos',
-		'bebes',
 		'id_fuente'
 	];
 
@@ -96,7 +87,7 @@ class Reserva extends Model
 
 	public function estadia_where_id_reserva()
 	{
-		return $this->hasMany(Estadium::class, 'id_reserva');
+		return $this->hasMany(Estadia::class, 'id_reserva');
 	}
 
 	public function reserva_habitacions_where_id_reserva()

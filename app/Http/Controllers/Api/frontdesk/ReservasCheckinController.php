@@ -38,9 +38,9 @@ class ReservasCheckinController extends Controller
                 'id_fuente'          => $data['id_fuente'] ?? $reserva->id_fuente,
                 'fecha_llegada'      => $data['fecha_llegada'],
                 'fecha_salida'       => $data['fecha_salida'],
-                'adultos'            => $data['adultos'],
-                'ninos'              => $data['ninos'] ?? 0,
-                'bebes'              => $data['bebes'] ?? 0,
+                'adultos'            => $data['adultos'] ??null,
+                'ninos'              => $data['ninos'] ?? null,
+                'bebes'              => $data['bebes'] ?? null,
                 'id_estado_estadia'  => $data['id_estado_estadia'] ?? null,
             ]);
 
@@ -51,9 +51,9 @@ class ReservasCheckinController extends Controller
                 'origen'           => 'frontdesk',
                 'nombre'           => $data['nombre_asignacion'] ?? 'Asignación',
                 'fecha_asignacion' => $data['fecha_llegada'],
-                'adultos'          => $data['adultos'],
-                'ninos'            => $data['ninos'] ?? 0,
-                'bebes'            => $data['bebes'] ?? 0,
+                'adultos'          => $data['adultos'] ?? null,
+                'ninos'            => $data['ninos'] ?? null,
+                'bebes'            => $data['bebes'] ?? null,
             ]);
 
             CheckIn::create([
@@ -69,4 +69,27 @@ class ReservasCheckinController extends Controller
             ], 201);
         });
     }
+
+    /* GET /frontdesk/reserva/{reserva}/habitaciones-disponibles
+public function habitacionesDisponibles(Reserva $reserva)
+{
+    $desde = $reserva->fecha_llegada;
+    $hasta = $reserva->fecha_salida;
+
+    // Habitaciones del tipo reservado y que no tengan choque en el rango
+    $habitaciones = \App\Models\hotel\Habitacion::query()
+        ->where('id_tipo_hab', $reserva->id_tipo_hab)
+        ->whereDoesntHave('asignaciones.estadia', function ($q) use ($desde, $hasta) {
+            // solapa si NO (salida <= desde  OR  llegada >= hasta)
+            $q->where(function ($qq) use ($desde, $hasta) {
+                $qq->where('fecha_salida', '>',  $desde)
+                   ->where('fecha_llegada', '<', $hasta);
+            });
+        })
+        ->get(['id_habitacion','numero','piso']); // ajusta columnas
+
+    return response()->json($habitaciones);
+}*/
+
+
 }

@@ -45,6 +45,38 @@ class ReservaHabitacionController extends Controller
         return response()->json($row->fresh('habitacion'), 201);
     }
 
+    public function update(AddReservaHabitacionRequest $r, Reserva $reserva, $id)
+    {
+        $row = $reserva->habitaciones()->where('id_reserva_hab', $id)->firstOrFail();
+        $data = $r->validated();
+
+        // Validar disponibilidad (excluyendo esta misma reserva)
+        $desde = $data['fecha_llegada'];
+        $hasta = $data['fecha_salida'];
+
+        $choqueReserva = ReservaHabitacion::where('id_habitacion', $data['id_habitacion'])
+            ->where('id_reserva_hab', '!=', $id)  // ← Excluir esta misma
+            ->where('fecha_llegada', '<', $hasta)
+            ->where('fecha_salida', '>', $desde)
+            ->exists();
+
+        $choqueAsign = AsignacionHabitacion::where('id_hab', $data['id_habitacion'])
+            ->where('fecha_asignacion', '<', $hasta)
+            ->exists();
+
+        $choqueBloqueo = HabBloqueoOperativo::where('id_habitacion', $data['id_habitacion'])
+            ->where('fecha_ini', '<', $hasta)
+            ->where('fecha_fin', '>', $desde)
+            ->exists();
+
+        if ($choqueReserva || $choqueAsign || $choqueBloqueo) {
+            return response()->json(['message' => 'La habitación no está disponible en el rango.'], 422);
+        }
+
+        $row->update($data);
+        return response()->json($row->fresh('habitacion'));
+    }
+
     public function destroy(Reserva $reserva, $id)
     {
         $row = $reserva->habitaciones()->where('id_reserva_hab',$id)->firstOrFail();
