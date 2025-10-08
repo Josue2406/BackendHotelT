@@ -25,7 +25,7 @@ public function __construct(MantenimientoService $service)
         $perPage = (int) $request->input('per_page', 15);
 
         $query = Mantenimiento::with([
-            'habitacion',
+            'habitacion.tipo',
             'asignador',
             'reportante',
             'estadoHabitacion',
@@ -93,7 +93,7 @@ public function __construct(MantenimientoService $service)
     public function show(Mantenimiento $mantenimiento)
     {
         $mantenimiento->load([
-            'habitacion',
+            'habitacion.tipo',
             'asignador',
             'reportante',
             'estadoHabitacion',
@@ -138,7 +138,7 @@ public function __construct(MantenimientoService $service)
     // Respuesta con relaciones actualizadas
     return new MantenimientoResource(
         $mantenimiento->fresh()->load([
-            'habitacion',
+            'habitacion.tipo',
             'asignador',
             'reportante',
             'estadoHabitacion',
