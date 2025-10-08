@@ -166,4 +166,10 @@ class LimpiezaController extends Controller
 
         return new LimpiezaResource($limpieza->fresh()->load(['estadoHabitacion']));
     }
+
+    public function destroy(Limpieza $limpieza)
+    {
+        $limpieza->delete();
+        return response()->noContent();
+    }
 }
