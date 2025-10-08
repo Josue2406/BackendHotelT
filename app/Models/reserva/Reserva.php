@@ -108,7 +108,7 @@ class Reserva extends Model
 	public function servicios()
 	{
 		return $this->belongsToMany(Servicio::class, 'reserva_servicio', 'id_reserva', 'id_servicio')
-					->withPivot('id_reserva_serv', 'cantidad', 'precio_unitario', 'descripcion')
+					->withPivot('id_reserva_serv', 'cantidad', 'precio_unitario', 'descripcion', 'fecha_servicio', 'subtotal')
 					->withTimestamps();
 	}
 

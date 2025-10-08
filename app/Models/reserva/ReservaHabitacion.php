@@ -113,8 +113,8 @@ class ReservaHabitacion extends Model
 		// Calcular noches
 		$noches = $this->fecha_llegada->diffInDays($this->fecha_salida);
 
-		// Precio base de la habitación (desde tipo_habitacion)
-		$precioBase = $this->habitacion->tipoHabitacion->precio_base ?? 0;
+		// Precio base de la habitación (desde la tabla habitaciones, no tipo_habitacion)
+		$precioBase = $this->habitacion->precio_base ?? 0;
 
 		return round($noches * $precioBase, 2);
 	}

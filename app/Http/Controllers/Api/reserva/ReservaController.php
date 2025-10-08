@@ -17,9 +17,62 @@ use Illuminate\Support\Facades\DB;
 
 class ReservaController extends Controller
 {
-    public function index() {
-        return Reserva::with(['cliente','estado','fuente','habitaciones.habitacion'])
-            ->latest('id_reserva')->paginate(20);
+    public function index(Request $request) {
+        $query = Reserva::with(['cliente','estado','fuente','habitaciones.habitacion']);
+
+        // Filtro: search (búsqueda general)
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function($q) use ($search) {
+                $q->where('id_reserva', 'like', "%{$search}%")
+                  ->orWhere('notas', 'like', "%{$search}%")
+                  ->orWhereHas('cliente', function($qCliente) use ($search) {
+                      $qCliente->where('nombre', 'like', "%{$search}%")
+                               ->orWhere('apellido1', 'like', "%{$search}%")
+                               ->orWhere('apellido2', 'like', "%{$search}%")
+                               ->orWhere('email', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        // Filtro: estado (por nombre del estado)
+        if ($request->filled('estado')) {
+            $nombreEstado = $request->input('estado');
+            $query->whereHas('estado', function($qEstado) use ($nombreEstado) {
+                $qEstado->where('nombre', 'like', "%{$nombreEstado}%");
+            });
+        }
+
+        // Filtro: desde/hasta (rango de fechas de creación o llegada)
+        if ($request->filled('desde')) {
+            $desde = $request->input('desde');
+            $query->where(function($q) use ($desde) {
+                $q->where('fecha_creacion', '>=', $desde)
+                  ->orWhereHas('habitaciones', function($qHab) use ($desde) {
+                      $qHab->where('fecha_llegada', '>=', $desde);
+                  });
+            });
+        }
+
+        if ($request->filled('hasta')) {
+            $hasta = $request->input('hasta');
+            $query->where(function($q) use ($hasta) {
+                $q->where('fecha_creacion', '<=', $hasta)
+                  ->orWhereHas('habitaciones', function($qHab) use ($hasta) {
+                      $qHab->where('fecha_llegada', '<=', $hasta);
+                  });
+            });
+        }
+
+        // Filtro: fuente (por nombre del canal)
+        if ($request->filled('fuente')) {
+            $nombreFuente = $request->input('fuente');
+            $query->whereHas('fuente', function($qFuente) use ($nombreFuente) {
+                $qFuente->where('nombre', 'like', "%{$nombreFuente}%");
+            });
+        }
+
+        return $query->latest('id_reserva')->paginate(20);
     }
 
     public function show(Reserva $reserva) {
@@ -65,7 +118,7 @@ class ReservaController extends Controller
                 ]);
 
                 // Calcular subtotal de esta habitación
-                $reservaHab->load('habitacion.tipoHabitacion');
+                $reservaHab->load('habitacion');
                 $subtotal = $reservaHab->calcularSubtotal();
                 $reservaHab->update(['subtotal' => $subtotal]);
 
