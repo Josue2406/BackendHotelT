@@ -14,7 +14,9 @@ use App\Models\reserva\PoliticaCancelacion;
 use App\Models\estadia\Estadia;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-
+use App\Notifications\ReservaCreada;
+use App\Notifications\ReservaActualizada;
+use App\Notifications\ReservaCancelada;
 class ReservaController extends Controller
 {
     public function index(Request $request) {
@@ -82,21 +84,18 @@ class ReservaController extends Controller
     public function store(StoreReservaRequest $r) {
         $data = $r->validated();
 
-        return DB::transaction(function () use ($data) {
-            // 1) Extraer habitaciones del request
+        // Devolvemos el ID para poder notificar tras el commit
+        $reservaId = DB::transaction(function () use ($data) {
             $habitaciones = $data['habitaciones'];
             unset($data['habitaciones']);
 
-            // 2) Crear la reserva (sin total_monto_reserva todavía)
             $data['fecha_creacion'] = now();
-            $data['total_monto_reserva'] = 0; // Se calculará después
+            $data['total_monto_reserva'] = 0;
             $reserva = Reserva::create($data);
 
             $totalReserva = 0;
 
-            // 3) Crear habitaciones y calcular precios
             foreach ($habitaciones as $hab) {
-                // Validar disponibilidad
                 $choqueReserva = ReservaHabitacion::where('id_habitacion', $hab['id_habitacion'])
                     ->where('fecha_llegada', '<', $hab['fecha_salida'])
                     ->where('fecha_salida', '>', $hab['fecha_llegada'])
@@ -106,7 +105,6 @@ class ReservaController extends Controller
                     throw new \Exception("La habitación {$hab['id_habitacion']} no está disponible en el rango especificado.");
                 }
 
-                // Crear la habitación
                 $reservaHab = $reserva->habitaciones()->create([
                     'id_habitacion' => $hab['id_habitacion'],
                     'fecha_llegada' => $hab['fecha_llegada'],
@@ -114,10 +112,9 @@ class ReservaController extends Controller
                     'adultos'       => $hab['adultos'],
                     'ninos'         => $hab['ninos'],
                     'bebes'         => $hab['bebes'],
-                    'subtotal'      => 0, // Se calculará a continuación
+                    'subtotal'      => 0,
                 ]);
 
-                // Calcular subtotal de esta habitación
                 $reservaHab->load('habitacion');
                 $subtotal = $reservaHab->calcularSubtotal();
                 $reservaHab->update(['subtotal' => $subtotal]);
@@ -125,21 +122,48 @@ class ReservaController extends Controller
                 $totalReserva += $subtotal;
             }
 
-            // 4) Actualizar total de la reserva
             $reserva->update(['total_monto_reserva' => $totalReserva]);
 
-            // 5) Retornar reserva completa
-            return response()->json(
-                $reserva->fresh()->load(['cliente', 'estado', 'fuente', 'habitaciones.habitacion.tipoHabitacion']),
-                201
-            );
+            // Notificar SOLO después de que la transacción haya sido confirmada
+            DB::afterCommit(function () use ($reserva) {
+                $fresh = $reserva->fresh()->load(['cliente','estado','fuente','habitaciones.habitacion.tipoHabitacion']);
+                if ($fresh->cliente?->email) {
+                    $fresh->cliente->notify(new ReservaCreada($fresh));
+                }
+            });
+
+            return $reserva->id_reserva;
         });
+
+        // Respuesta consistente con lo que ya retornabas
+        $reserva = Reserva::with(['cliente','estado','fuente','habitaciones.habitacion.tipoHabitacion'])
+            ->findOrFail($reservaId);
+
+        return response()->json($reserva, 201);
     }
 
     public function update(UpdateReservaRequest $r, Reserva $reserva) {
         $reserva->update($r->validated());
         return $reserva->fresh();
     }
+    /* 
+    public function update(UpdateReservaRequest $r, Reserva $reserva) {
+        // Guardamos cambios y notificamos
+        $original = $reserva->replicate();
+        $reserva->update($r->validated());
+
+        $cambios = $reserva->getChanges();
+        unset($cambios['updated_at']);
+
+        $reservaFresh = $reserva->fresh()->load(['cliente']);
+
+        if ($reservaFresh->cliente?->email) {
+            $reservaFresh->cliente->notify(new \App\Notifications\ReservaActualizada($reservaFresh, $cambios));
+        }
+
+        return $reservaFresh;
+    }
+    */
 
     public function destroy(Reserva $reserva) {
         // si hay FKs dependientes, podrías impedir borrar o hacer soft delete
@@ -166,6 +190,22 @@ class ReservaController extends Controller
 
         return response()->json(['ok' => true]);
     }
+    /* 
+    public function cancelar(CancelReservaRequest $r, Reserva $reserva) {
+        // Cambia estado a cancelada (ajusta el ID a tu catálogo)
+        $reserva->update(['id_estado_res' =>  id estado cancelada  3]);
+
+        // (Opcional) aplicar política de cancelación aquí...
+
+        $reservaFresh = $reserva->fresh()->load(['cliente','habitaciones.habitacion','estado']);
+
+        if ($reservaFresh->cliente?->email) {
+            $reservaFresh->cliente->notify(new \App\Notifications\ReservaCancelada($reservaFresh));
+        }
+
+        return response()->json(['ok' => true]);
+    }
+    */
 
     public function noShow(Reserva $reserva) {
         $reserva->update(['id_estado_res' => /* id estado no_show */ 4]);
