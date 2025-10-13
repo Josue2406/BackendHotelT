@@ -87,8 +87,10 @@ Route::get('availability/search', [AvailabilityController::class, 'search']);
 
 
 // CRUD reserva
-Route::apiResource('reservas', ReservaController::class);
+//Route::middleware('auth:sanctum')->group(function () {
 
+Route::apiResource('reservas', ReservaController::class);
+//});
 Route::apiResource('temporadas', TemporadaController::class);
 
 Route::apiResource('temporada-reglas', TemporadaReglaController::class);
@@ -115,13 +117,16 @@ Route::post('reservas/{reserva}/politicas',        [ReservaPoliticaController::c
 Route::delete('reservas/{reserva}/politicas/{id}', [ReservaPoliticaController::class, 'destroy']);
 
 // Acciones de reserva
+//Route::middleware('auth:sanctum')->group(function () {
+   
+
 Route::post('reservas/{reserva}/confirmar', [ReservaController::class, 'confirmar']);
 Route::post('reservas/{reserva}/cancelar',  [ReservaController::class, 'cancelar']);
 Route::post('reservas/{reserva}/cotizar',   [ReservaController::class, 'cotizar']);
 Route::post('reservas/{reserva}/no-show',   [ReservaController::class, 'noShow']);
 Route::post('reservas/{reserva}/checkin',   [ReservaController::class, 'generarEstadia']);
 
-
+//});
 
 
 

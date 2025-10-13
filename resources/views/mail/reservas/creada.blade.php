@@ -1,7 +1,7 @@
 <x-mail::message>
 # ¡Gracias por tu reserva, {{ $cliente->nombre }}!
 
-Tu reserva **#{{ $reserva->id_reserva }}** ha sido creada exitosamente.  
+Tu reserva ha sido creada exitosamente.  
 A continuación te dejamos un resumen de los detalles:
 
 ---
