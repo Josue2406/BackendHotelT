@@ -42,7 +42,7 @@ class ReservaCreada extends Notification
         $r = $this->reserva->loadMissing(['cliente','estado','fuente','habitaciones.habitacion']);
 
         return (new MailMessage)
-            ->subject("Tu reserva #{$r->id_reserva} fue creada")
+            ->subject("Tu reserva fue creada")
             ->markdown('mail.reservas.creada', [
                 'reserva' => $r,
                 'cliente' => $r->cliente,

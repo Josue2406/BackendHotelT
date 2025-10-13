@@ -9,7 +9,7 @@ class StoreReservaRequest extends FormRequest
 
     public function rules(): array {
         return [
-            'id_cliente'   => 'required|integer|exists:clientes,id_cliente',
+            //'id_cliente'   => 'required|integer|exists:clientes,id_cliente',
             'id_estado_res'=> 'required|integer|exists:estado_reserva,id_estado_res',
             'id_fuente'    => 'nullable|integer|exists:fuentes,id_fuente',
             'notas'        => 'nullable|string|max:300',
