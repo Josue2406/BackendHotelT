@@ -87,10 +87,10 @@ Route::get('availability/search', [AvailabilityController::class, 'search']);
 
 
 // CRUD reserva
-//Route::middleware('auth:sanctum')->group(function () {
+Route::middleware('auth:sanctum')->group(function () {
 
 Route::apiResource('reservas', ReservaController::class);
-//});
+});
 Route::apiResource('temporadas', TemporadaController::class);
 
 Route::apiResource('temporada-reglas', TemporadaReglaController::class);
