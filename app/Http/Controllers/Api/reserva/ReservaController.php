@@ -11,6 +11,7 @@ use App\Models\reserva\ReservaHabitacion;
 use App\Models\reserva\ReservaServicio;
 use App\Models\reserva\ReservaPolitica;
 use App\Models\reserva\PoliticaCancelacion;
+use App\Models\reserva\EstadoReserva;
 use App\Models\estadia\Estadia;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -253,21 +254,28 @@ class ReservaController extends Controller
     // ===== Acciones =====
 
     public function confirmar(Reserva $reserva) {
-        // ajusta el ID del estado "confirmada"
-        $reserva->update(['id_estado_res' => /* id estado confirmada */ 2]);
-        return $reserva->fresh();
+        // Confirmar la reserva - El Observer manejará el estado de las habitaciones
+        $reserva->update(['id_estado_res' => EstadoReserva::ESTADO_CONFIRMADA]);
+        return $reserva->fresh(['habitaciones.habitacion.estado']);
     }
 
     public function cancelar(CancelReservaRequest $r, Reserva $reserva) {
-        // 1) marcar estado cancelada
-        $reserva->update(['id_estado_res' => /* id estado cancelada */ 3]);
+        // 1) marcar estado cancelada - El Observer se encargará de liberar las habitaciones
+        $reserva->update(['id_estado_res' => EstadoReserva::ESTADO_CANCELADA]);
 
         // 2) (Opcional) aplicar política si existe y si corresponde la ventana:
         // - Busca reserva_politica -> politica_cancelacion
         // - Evalúa ventana vs fecha_llegada más próxima en reserva_habitacions
         // - Calcula penalidad (porcentaje | noches) y *si quieres* registra un cargo en folio/reserva_pago
 
-        return response()->json(['ok' => true]);
+        // Recargar la reserva con las habitaciones actualizadas
+        $reserva->load('habitaciones.habitacion.estado');
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'Reserva cancelada exitosamente. Las habitaciones han sido liberadas.',
+            'reserva' => $reserva
+        ]);
     }
     /* 
     public function cancelar(CancelReservaRequest $r, Reserva $reserva) {
@@ -287,9 +295,10 @@ class ReservaController extends Controller
     */
 
     public function noShow(Reserva $reserva) {
-        $reserva->update(['id_estado_res' => /* id estado no_show */ 4]);
+        $reserva->update(['id_estado_res' => EstadoReserva::ESTADO_NO_SHOW]);
         // (Opcional) aplicar penalidad de no-show según política
-        return $reserva->fresh();
+        // El Observer liberará las habitaciones automáticamente
+        return $reserva->fresh(['habitaciones.habitacion.estado']);
     }
 
     public function cotizar(CotizarReservaRequest $r, Reserva $reserva) {
