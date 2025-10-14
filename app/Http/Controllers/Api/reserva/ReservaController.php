@@ -81,66 +81,145 @@ class ReservaController extends Controller
         return $reserva->load(['cliente','estado','fuente','habitaciones.habitacion','servicios','politicas']);
     }
 
-    public function store(StoreReservaRequest $r) {
-        $data = $r->validated();
+    // public function store(StoreReservaRequest $r) {
+    //     $data = $r->validated();
 
-        // Devolvemos el ID para poder notificar tras el commit
-        $reservaId = DB::transaction(function () use ($data) {
-            $habitaciones = $data['habitaciones'];
-            unset($data['habitaciones']);
+    //     // Devolvemos el ID para poder notificar tras el commit
+    //     $reservaId = DB::transaction(function () use ($data) {
+    //         $habitaciones = $data['habitaciones'];
+    //         unset($data['habitaciones']);
 
-            $data['fecha_creacion'] = now();
-            $data['total_monto_reserva'] = 0;
-            $reserva = Reserva::create($data);
+    //         $data['fecha_creacion'] = now();
+    //         $data['total_monto_reserva'] = 0;
+    //         $reserva = Reserva::create($data);
 
-            $totalReserva = 0;
+    //         $totalReserva = 0;
 
-            foreach ($habitaciones as $hab) {
-                $choqueReserva = ReservaHabitacion::where('id_habitacion', $hab['id_habitacion'])
-                    ->where('fecha_llegada', '<', $hab['fecha_salida'])
-                    ->where('fecha_salida', '>', $hab['fecha_llegada'])
-                    ->exists();
+    //         foreach ($habitaciones as $hab) {
+    //             $choqueReserva = ReservaHabitacion::where('id_habitacion', $hab['id_habitacion'])
+    //                 ->where('fecha_llegada', '<', $hab['fecha_salida'])
+    //                 ->where('fecha_salida', '>', $hab['fecha_llegada'])
+    //                 ->exists();
 
-                if ($choqueReserva) {
-                    throw new \Exception("La habitación {$hab['id_habitacion']} no está disponible en el rango especificado.");
-                }
+    //             if ($choqueReserva) {
+    //                 throw new \Exception("La habitación {$hab['id_habitacion']} no está disponible en el rango especificado.");
+    //             }
 
-                $reservaHab = $reserva->habitaciones()->create([
-                    'id_habitacion' => $hab['id_habitacion'],
-                    'fecha_llegada' => $hab['fecha_llegada'],
-                    'fecha_salida'  => $hab['fecha_salida'],
-                    'adultos'       => $hab['adultos'],
-                    'ninos'         => $hab['ninos'],
-                    'bebes'         => $hab['bebes'],
-                    'subtotal'      => 0,
-                ]);
+    //             $reservaHab = $reserva->habitaciones()->create([
+    //                 'id_habitacion' => $hab['id_habitacion'],
+    //                 'fecha_llegada' => $hab['fecha_llegada'],
+    //                 'fecha_salida'  => $hab['fecha_salida'],
+    //                 'adultos'       => $hab['adultos'],
+    //                 'ninos'         => $hab['ninos'],
+    //                 'bebes'         => $hab['bebes'],
+    //                 'subtotal'      => 0,
+    //             ]);
 
-                $reservaHab->load('habitacion');
-                $subtotal = $reservaHab->calcularSubtotal();
-                $reservaHab->update(['subtotal' => $subtotal]);
+    //             $reservaHab->load('habitacion');
+    //             $subtotal = $reservaHab->calcularSubtotal();
+    //             $reservaHab->update(['subtotal' => $subtotal]);
 
-                $totalReserva += $subtotal;
+    //             $totalReserva += $subtotal;
+    //         }
+
+    //         $reserva->update(['total_monto_reserva' => $totalReserva]);
+
+    //         // Notificar SOLO después de que la transacción haya sido confirmada
+    //         DB::afterCommit(function () use ($reserva) {
+    //             $fresh = $reserva->fresh()->load(['cliente','estado','fuente','habitaciones.habitacion.tipoHabitacion']);
+    //             if ($fresh->cliente?->email) {
+    //                 $fresh->cliente->notify(new ReservaCreada($fresh));
+    //             }
+    //         });
+
+    //         return $reserva->id_reserva;
+    //     });
+
+    //     // Respuesta consistente con lo que ya retornabas
+    //     $reserva = Reserva::with(['cliente','estado','fuente','habitaciones.habitacion.tipoHabitacion'])
+    //         ->findOrFail($reservaId);
+
+    //     return response()->json($reserva, 201);
+    // }
+    public function store(StoreReservaRequest $r)
+{
+    // 1) Cliente autenticado vía Sanctum
+    $cliente = $r->user(); // o $r->user('cliente') si usas varios providers
+    if (!$cliente) {
+        return response()->json(['message' => 'No autenticado'], 401);
+    }
+
+    // 2) Validación y forzar que la reserva pertenezca al cliente autenticado
+    $data = $r->validated();
+    unset($data['id_cliente']);                 // no confiar en el body
+    $data['id_cliente']   = $cliente->id_cliente;
+    $data['fecha_creacion']      = now();
+    $data['total_monto_reserva'] = 0;
+
+    // 3) Crear reserva + habitaciones dentro de transacción
+    $reservaId = DB::transaction(function () use ($data) {
+        $habitaciones = $data['habitaciones'];
+        unset($data['habitaciones']);
+
+        $reserva = Reserva::create($data);
+
+        $totalReserva = 0;
+        foreach ($habitaciones as $hab) {
+            // disponibilidad
+            $choqueReserva = \App\Models\reserva\ReservaHabitacion::where('id_habitacion', $hab['id_habitacion'])
+                ->where('fecha_llegada', '<', $hab['fecha_salida'])
+                ->where('fecha_salida', '>', $hab['fecha_llegada'])
+                ->exists();
+
+            if ($choqueReserva) {
+                throw new \Exception("La habitación {$hab['id_habitacion']} no está disponible en el rango especificado.");
             }
 
-            $reserva->update(['total_monto_reserva' => $totalReserva]);
+            // crear item
+            $reservaHab = $reserva->habitaciones()->create([
+                'id_habitacion' => $hab['id_habitacion'],
+                'fecha_llegada' => $hab['fecha_llegada'],
+                'fecha_salida'  => $hab['fecha_salida'],
+                'adultos'       => $hab['adultos'],
+                'ninos'         => $hab['ninos'],
+                'bebes'         => $hab['bebes'],
+                'subtotal'      => 0,
+            ]);
 
-            // Notificar SOLO después de que la transacción haya sido confirmada
-            DB::afterCommit(function () use ($reserva) {
-                $fresh = $reserva->fresh()->load(['cliente','estado','fuente','habitaciones.habitacion.tipoHabitacion']);
-                if ($fresh->cliente?->email) {
-                    $fresh->cliente->notify(new ReservaCreada($fresh));
-                }
-            });
+            // calcular subtotal
+            $reservaHab->load('habitacion');
+            $subtotal = $reservaHab->calcularSubtotal();
+            $reservaHab->update(['subtotal' => $subtotal]);
+            $totalReserva += $subtotal;
+        }
 
-            return $reserva->id_reserva;
+        // total de la reserva
+        $reserva->update(['total_monto_reserva' => $totalReserva]);
+
+        // 4) Enviar el correo SOLO después de commit
+        DB::afterCommit(function () use ($reserva) {
+            $fresh = $reserva->fresh()->load([
+                'cliente',
+                'estado',
+                'fuente',
+                'habitaciones.habitacion.tipoHabitacion'
+            ]);
+
+            if ($fresh->cliente?->email) {
+                $fresh->cliente->notify(new \App\Notifications\ReservaCreada($fresh));
+            }
         });
 
-        // Respuesta consistente con lo que ya retornabas
-        $reserva = Reserva::with(['cliente','estado','fuente','habitaciones.habitacion.tipoHabitacion'])
-            ->findOrFail($reservaId);
+        return $reserva->id_reserva;
+    });
 
-        return response()->json($reserva, 201);
-    }
+    // 5) Respuesta
+    $reserva = Reserva::with(['cliente','estado','fuente','habitaciones.habitacion.tipoHabitacion'])
+        ->findOrFail($reservaId);
+
+    return response()->json($reserva, 201);
+}
+
 
     public function update(UpdateReservaRequest $r, Reserva $reserva) {
         $reserva->update($r->validated());

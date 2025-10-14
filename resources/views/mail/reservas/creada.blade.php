@@ -1,7 +1,7 @@
 <x-mail::message>
 # ¡Gracias por tu reserva, {{ $cliente->nombre }}!
 
-Tu reserva **#{{ $reserva->id_reserva }}** ha sido creada exitosamente.  
+Tu reserva ha sido creada exitosamente.  
 A continuación te dejamos un resumen de los detalles:
 
 ---
@@ -11,6 +11,7 @@ A continuación te dejamos un resumen de los detalles:
 - **Fuente:** {{ $reserva->fuente?->nombre ?? 'N/D' }}
 - **Fecha de creación:** {{ $reserva->fecha_creacion?->format('d/m/Y H:i') ?? now()->format('d/m/Y H:i') }}
 - **Total:** ₡{{ number_format($reserva->total_monto_reserva, 2) }}
+- **Numero de reserva:** {{ $reserva->id_reserva }}
 
 ---
 
