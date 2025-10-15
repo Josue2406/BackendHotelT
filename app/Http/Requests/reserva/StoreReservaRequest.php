@@ -10,11 +10,14 @@ class StoreReservaRequest extends FormRequest
     public function authorize(): bool { return true; }
 
     public function rules(): array {
+        // Intentar obtener usuario autenticado (puede ser de cualquier guard)
+        $usuarioAutenticado = auth('sanctum')->user() ?? auth()->guard('cliente')->user();
+
         return [
             // id_cliente es condicional:
             // - Si hay token autenticado: se toma del token (no se requiere)
             // - Si NO hay token: se requiere (para reservas desde recepción)
-            'id_cliente'   => $this->user() ? 'nullable|integer|exists:clientes,id_cliente' : 'required|integer|exists:clientes,id_cliente',
+            'id_cliente'   => $usuarioAutenticado ? 'nullable|integer|exists:clientes,id_cliente' : 'required|integer|exists:clientes,id_cliente',
 
             'id_estado_res'=> 'required|integer|exists:estado_reserva,id_estado_res',
             'id_fuente'    => 'nullable|integer|exists:fuentes,id_fuente',

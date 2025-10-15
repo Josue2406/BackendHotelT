@@ -4,6 +4,34 @@ Este documento explica cómo funciona el sistema de creación de reservas en dos
 
 ---
 
+## ⚙️ CONFIGURACIÓN DE RUTAS
+
+### Estado Actual (Implementado)
+
+```php
+// routes/api.php
+
+// POST (store) sin autenticación obligatoria para permitir reservas desde recepción
+Route::post('reservas', [ReservaController::class, 'store']); // Web (con token) o Recepción (sin token)
+
+// El resto de operaciones CRUD requieren autenticación
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('reservas', [ReservaController::class, 'index']);
+    Route::get('reservas/{reserva}', [ReservaController::class, 'show']);
+    Route::put('reservas/{reserva}', [ReservaController::class, 'update']);
+    Route::patch('reservas/{reserva}', [ReservaController::class, 'update']);
+    Route::delete('reservas/{reserva}', [ReservaController::class, 'destroy']);
+});
+```
+
+### Características
+- ✅ **POST /api/reservas** NO requiere autenticación obligatoria
+- ✅ Detecta automáticamente si viene con token (web) o sin token (recepción)
+- ✅ GET, PUT, PATCH, DELETE SÍ requieren autenticación
+- ✅ La lógica del controlador maneja ambos casos de forma segura
+
+---
+
 ## 📊 COMPARACIÓN DE MODALIDADES
 
 | Característica | Web (Cliente Autenticado) | Recepción (Staff) |

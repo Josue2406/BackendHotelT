@@ -90,10 +90,18 @@ Route::get('reservas/buscar', [ReservaController::class, 'buscarPorCodigo']);
 Route::get('reservas/codigos/estadisticas', [ReservaController::class, 'estadisticasCodigos']);
 
 // CRUD reserva
-Route::middleware('auth:sanctum')->group(function () {
+// POST (store) sin autenticación obligatoria para permitir reservas desde recepción
+Route::post('reservas', [ReservaController::class, 'store']); // Web (con token) o Recepción (sin token)
 
-Route::apiResource('reservas', ReservaController::class);
+// El resto de operaciones CRUD requieren autenticación
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('reservas', [ReservaController::class, 'index']);
+    Route::get('reservas/{reserva}', [ReservaController::class, 'show']);
+    Route::put('reservas/{reserva}', [ReservaController::class, 'update']);
+    Route::patch('reservas/{reserva}', [ReservaController::class, 'update']);
+    Route::delete('reservas/{reserva}', [ReservaController::class, 'destroy']);
 });
+
 Route::apiResource('temporadas', TemporadaController::class);
 
 Route::apiResource('temporada-reglas', TemporadaReglaController::class);

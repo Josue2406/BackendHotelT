@@ -156,16 +156,23 @@ class ReservaController extends Controller
     $data = $r->validated();
 
     // 1) Determinar id_cliente según el contexto
-    $clienteAutenticado = $r->user(); // Usuario autenticado vía Sanctum
+    // Intentar autenticar con el guard 'cliente' primero
+    $clienteAutenticado = auth('sanctum')->user();
+
+    // Si no hay usuario autenticado con sanctum, intentar con el guard cliente
+    if (!$clienteAutenticado) {
+        $clienteAutenticado = auth()->guard('cliente')->user();
+    }
 
     if ($clienteAutenticado) {
-        // CASO WEB: Hay token autenticado
+        // CASO WEB: Hay token autenticado (cliente)
         // Siempre usar el cliente del token (seguridad: no puede crear reservas para otros)
         $data['id_cliente'] = $clienteAutenticado->id_cliente;
 
         Log::info('Reserva creada desde WEB (cliente autenticado)', [
             'id_cliente' => $data['id_cliente'],
-            'email' => $clienteAutenticado->email ?? null
+            'email' => $clienteAutenticado->email ?? null,
+            'modelo' => get_class($clienteAutenticado)
         ]);
     } else {
         // CASO RECEPCIÓN: No hay token
