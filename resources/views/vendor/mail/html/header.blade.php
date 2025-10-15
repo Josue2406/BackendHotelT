@@ -35,13 +35,13 @@
 
 @php
   $app = config('app.name');
-  $logo = rtrim(config('app.url'), '/').'/build/assets/Lanaku.jpeg';
+  $logo = rtrim(config('app.url'), '/').'/assets/Lanaku.jpeg';
 @endphp
 
 <tr>
 <td class="header">
   <a href="{{ $url ?? config('app.url') }}" style="display:inline-block;">
-    <img src="{{ $logo }}" alt="{{ $app }}" class="logo" style="height:200px; max-height:200px;">
+    <img src="{{ $logo }}" alt="{{ $app }}" class="logo" style="height:200px; max-height:300px;">
   </a>
 </td>
 </tr>
