@@ -63,6 +63,7 @@ class Reserva extends Model
 	protected $fillable = [
 		'id_cliente',
 		'id_estado_res',
+		'codigo_reserva',
 		'fecha_creacion',
 		'total_monto_reserva',
 		'monto_pagado',
@@ -73,7 +74,7 @@ class Reserva extends Model
 		'id_fuente'
 	];
 
-	protected $appends = ['porcentaje_pagado', 'resumen_pagos'];
+	protected $appends = ['porcentaje_pagado', 'resumen_pagos', 'codigo_formateado'];
 
 	public function id_cliente()
 	{
@@ -165,6 +166,7 @@ public function estadias()
 
 /**
  * Calcular el total pagado sumando todos los pagos completados
+ * IMPORTANTE: Suma monto_usd para mantener consistencia con la moneda base (USD)
  */
 public function calcularMontoPagado(): float
 {
@@ -173,7 +175,7 @@ public function calcularMontoPagado(): float
             \App\Models\catalago_pago\EstadoPago::ESTADO_COMPLETADO,
             \App\Models\catalago_pago\EstadoPago::ESTADO_PARCIAL
         ])
-        ->sum('monto');
+        ->sum('monto_usd');
 }
 
 /**
@@ -251,6 +253,19 @@ public function getResumenPagosAttribute(): array
         'pago_completo' => $this->pago_completo,
         'puede_confirmar' => $this->alcanzoPagoMinimo(),
     ];
+}
+
+/**
+ * Obtener código de reserva formateado
+ */
+public function getCodigoFormateadoAttribute(): ?string
+{
+    if (!$this->codigo_reserva) {
+        return null;
+    }
+
+    $service = app(\App\Services\CodigoReservaService::class);
+    return $service->formatearCodigo($this->codigo_reserva);
 }
 
 }

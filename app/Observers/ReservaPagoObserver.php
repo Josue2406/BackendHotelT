@@ -45,7 +45,8 @@ class ReservaPagoObserver
      */
     protected function actualizarReserva(ReservaPago $pago): void
     {
-        $reserva = $pago->id_reserva; // relación belongsTo
+        // Usar la relación reserva() que devuelve el objeto Reserva
+        $reserva = $pago->reserva;
 
         if (!$reserva) {
             return;

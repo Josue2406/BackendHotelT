@@ -5,6 +5,7 @@ namespace App\Http\Requests\reserva;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 use App\Models\catalago_pago\EstadoPago;
+use App\Services\ExchangeRateService;
 
 class ProcesarPagoRequest extends FormRequest
 {
@@ -21,12 +22,49 @@ class ProcesarPagoRequest extends FormRequest
      */
     public function rules(): array
     {
+        $exchangeService = app(ExchangeRateService::class);
+        $monedasSoportadas = array_keys(ExchangeRateService::MONEDAS_SOPORTADAS);
+
         return [
+            // Monto del pago
             'monto' => 'required|numeric|min:0.01',
+
+            // Moneda del pago (ej: USD, CRC, EUR)
+            'codigo_moneda' => [
+                'required',
+                'string',
+                'size:3',
+                function ($attribute, $value, $fail) use ($exchangeService) {
+                    if (!$exchangeService->estaMonedaSoportada($value)) {
+                        $fail('La moneda seleccionada no está soportada.');
+                    }
+                },
+            ],
+
+            // Método de pago (tarjeta, efectivo, transferencia, etc.)
             'id_metodo_pago' => 'required|integer|exists:metodo_pago,id_metodo_pago',
+
+            // Estado del pago
+            'id_estado_pago' => [
+                'required',
+                'integer',
+                function ($attribute, $value, $fail) {
+                    $estadosValidos = [
+                        EstadoPago::ESTADO_COMPLETADO,
+                        EstadoPago::ESTADO_PARCIAL,
+                        EstadoPago::ESTADO_PENDIENTE,
+                    ];
+
+                    if (!in_array($value, $estadosValidos)) {
+                        $fail('El estado de pago debe ser Completado, Parcial o Pendiente.');
+                    }
+                },
+            ],
+
+            // Campos opcionales
             'id_tipo_transaccion' => 'nullable|integer|exists:tipo_transaccion,id_tipo_transaccion',
-            'referencia_transaccion' => 'nullable|string|max:100',
-            'notas' => 'nullable|string|max:300',
+            'referencia' => 'nullable|string|max:100',
+            'notas' => 'nullable|string|max:500',
         ];
     }
 
@@ -43,12 +81,12 @@ class ProcesarPagoRequest extends FormRequest
                 $montoPago = $this->input('monto');
                 $montoPendiente = $reserva->monto_pendiente;
 
-                if ($montoPago > $montoPendiente) {
-                    $validator->errors()->add(
-                        'monto',
-                        "El monto del pago (\${$montoPago}) no puede ser mayor al monto pendiente (\${$montoPendiente})."
-                    );
-                }
+                // if ($montoPago > $montoPendiente) {
+                //     $validator->errors()->add(
+                //         'monto',
+                //         "El monto del pago (\${$montoPago}) no puede ser mayor al monto pendiente (\${$montoPendiente})."
+                //     );
+                // }
 
                 // Advertir si el pago es muy bajo
                 $montoMinimo = $reserva->total_monto_reserva * ($reserva->porcentaje_minimo_pago / 100);

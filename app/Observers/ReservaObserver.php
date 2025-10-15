@@ -5,10 +5,28 @@ namespace App\Observers;
 use App\Models\reserva\Reserva;
 use App\Models\reserva\EstadoReserva;
 use App\Models\habitacion\EstadoHabitacion;
+use App\Services\CodigoReservaService;
 use Illuminate\Support\Facades\Log;
 
 class ReservaObserver
 {
+    /**
+     * Handle the Reserva "creating" event.
+     * Se ejecuta ANTES de crear el registro
+     */
+    public function creating(Reserva $reserva): void
+    {
+        // Generar código único si no tiene uno
+        if (empty($reserva->codigo_reserva)) {
+            $codigoService = app(CodigoReservaService::class);
+            $reserva->codigo_reserva = $codigoService->generarCodigoUnico();
+
+            Log::info("Código de reserva generado automáticamente", [
+                'codigo_reserva' => $reserva->codigo_reserva,
+            ]);
+        }
+    }
+
     /**
      * Handle the Reserva "updating" event.
      * Se ejecuta ANTES de que se actualice el registro

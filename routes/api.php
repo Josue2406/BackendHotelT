@@ -85,6 +85,9 @@ Route::apiResource('bloqueos', BloqueoOperativoController::class)->only(['index'
 Route::get('disponibilidad', DisponibilidadController::class);
 Route::get('availability/search', [AvailabilityController::class, 'search']);
 
+// Búsqueda por Código de Reserva (DEBE IR ANTES DE apiResource para evitar conflictos)
+Route::get('reservas/buscar', [ReservaController::class, 'buscarPorCodigo']);
+Route::get('reservas/codigos/estadisticas', [ReservaController::class, 'estadisticasCodigos']);
 
 // CRUD reserva
 Route::middleware('auth:sanctum')->group(function () {
@@ -118,13 +121,30 @@ Route::delete('reservas/{reserva}/politicas/{id}', [ReservaPoliticaController::c
 
 // Acciones de reserva
 //Route::middleware('auth:sanctum')->group(function () {
-   
+
 
 Route::post('reservas/{reserva}/confirmar', [ReservaController::class, 'confirmar']);
 Route::post('reservas/{reserva}/cancelar',  [ReservaController::class, 'cancelar']);
 Route::post('reservas/{reserva}/cotizar',   [ReservaController::class, 'cotizar']);
 Route::post('reservas/{reserva}/no-show',   [ReservaController::class, 'noShow']);
 Route::post('reservas/{reserva}/checkin',   [ReservaController::class, 'generarEstadia']);
+
+// Sistema de Pagos
+Route::post('reservas/{reserva}/pagos', [ReservaController::class, 'procesarPago']);
+Route::get('reservas/{reserva}/pagos', [ReservaController::class, 'listarPagos']);
+
+// Sistema de Cancelación con Políticas
+Route::get('reservas/{reserva}/cancelacion/preview', [ReservaController::class, 'previewCancelacion']);
+Route::post('reservas/{reserva}/cancelar-con-politica', [ReservaController::class, 'cancelarConPolitica']);
+
+// Sistema de Extensión de Estadía
+Route::post('reservas/{reserva}/extender', [ReservaController::class, 'extenderEstadia']);
+Route::post('reservas/{reserva}/extender/confirmar', [ReservaController::class, 'confirmarExtensionCambioHabitacion']);
+
+// Sistema de Monedas y Tipos de Cambio
+Route::get('monedas/soportadas', [ReservaController::class, 'monedasSoportadas']);
+Route::get('monedas/tipos-cambio', [ReservaController::class, 'tiposDeCambio']);
+Route::get('monedas/convertir', [ReservaController::class, 'convertirMoneda']);
 
 //});
 

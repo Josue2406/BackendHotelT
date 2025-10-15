@@ -11,7 +11,11 @@ class StoreReservaRequest extends FormRequest
 
     public function rules(): array {
         return [
-            //'id_cliente'   => 'required|integer|exists:clientes,id_cliente',
+            // id_cliente es condicional:
+            // - Si hay token autenticado: se toma del token (no se requiere)
+            // - Si NO hay token: se requiere (para reservas desde recepción)
+            'id_cliente'   => $this->user() ? 'nullable|integer|exists:clientes,id_cliente' : 'required|integer|exists:clientes,id_cliente',
+
             'id_estado_res'=> 'required|integer|exists:estado_reserva,id_estado_res',
             'id_fuente'    => 'nullable|integer|exists:fuentes,id_fuente',
             'notas'        => 'nullable|string|max:300',
@@ -67,6 +71,8 @@ class StoreReservaRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'id_cliente.required' => 'El ID del cliente es obligatorio cuando no hay autenticación (reservas desde recepción).',
+            'id_cliente.exists' => 'El cliente especificado no existe en el sistema.',
             'id_estado_res.required' => 'El estado de la reserva es obligatorio.',
             'id_estado_res.exists' => 'El estado de reserva seleccionado no es válido.',
             'habitaciones.required' => 'Debe incluir al menos una habitación.',
