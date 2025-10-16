@@ -31,6 +31,22 @@ class EstadoPago extends Model
 		'nombre'
 	];
 
+	// Constantes para estados de pago
+	public const ESTADO_PENDIENTE = 1;
+	public const ESTADO_COMPLETADO = 2;
+	public const ESTADO_FALLIDO = 3;
+	public const ESTADO_REEMBOLSADO = 4;
+	public const ESTADO_PARCIAL = 5;
+
+	// Nombres de estados
+	public const ESTADOS_VALIDOS = [
+		self::ESTADO_PENDIENTE => 'Pendiente',
+		self::ESTADO_COMPLETADO => 'Completado',
+		self::ESTADO_FALLIDO => 'Fallido',
+		self::ESTADO_REEMBOLSADO => 'Reembolsado',
+		self::ESTADO_PARCIAL => 'Parcial',
+	];
+
 	public function reserva_pagos_where_id_estado_pago()
 	{
 		return $this->hasMany(ReservaPago::class, 'id_estado_pago');

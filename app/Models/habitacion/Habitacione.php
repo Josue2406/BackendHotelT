@@ -4,18 +4,45 @@ namespace App\Models\habitacion;
 
 use App\Models\check_in\AsignacionHabitacion;
 use App\Models\habitacion\EstadoHabitacion;
+use App\Models\habitacion\HabitacionAmenidad;
 use App\Models\habitacion\TiposHabitacion;
 use App\Models\house_keeping\HabBloqueoOperativo;
 use App\Models\house_keeping\Limpieza;
 use App\Models\house_keeping\Mantenimiento;
 use App\Models\reserva\ReservaHabitacion;
-
-use App\Services\PricingService;          // <-- para calcular precios
+use App\Services\reserva\PricingService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * Class Habitacione
+ *
+ * @property int $id_habitacion
+ * @property int $id_estado_hab
+ * @property int $tipo_habitacion_id
+ * @property string $nombre
+ * @property string $numero
+ * @property int $piso
+ * @property int $capacidad
+ * @property string $medida
+ * @property string $descripcion
+ * @property float|null $precio_base
+ * @property string|null $moneda
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property string|null $deleted_at
+ *
+ * @property Collection|AsignacionHabitacion[] $asignacion_habitacions_where_id_hab
+ * @property Collection|HabBloqueoOperativo[] $hab_bloqueo_operativos_where_id_habitacion
+ * @property Collection|HabitacionAmenidad[] $habitacion_amenidads_where_id_habitacion
+ * @property Collection|Limpieza[] $limpiezas_where_id_habitacion
+ * @property Collection|Mantenimiento[] $mantenimientos_where_id_habitacion
+ * @property Collection|ReservaHabitacion[] $reserva_habitacions_where_id_habitacion
+ *
+ * @package App\Models
+ */
 class Habitacione extends Model
 {
     use SoftDeletes;
@@ -28,7 +55,7 @@ class Habitacione extends Model
         'tipo_habitacion_id' => 'int',
         'piso'               => 'int',
         'capacidad'          => 'int',
-        'precio_base'        => 'decimal:2',   // <-- nuevo
+        'precio_base'        => 'decimal:2',
     ];
 
     protected $fillable = [
@@ -40,15 +67,14 @@ class Habitacione extends Model
         'capacidad',
         'medida',
         'descripcion',
-        'precio_base',   // <-- nuevo
-        'moneda',        // <-- nuevo (ej. 'CRC', 'USD')
+        'precio_base',
+        'moneda',
     ];
 
     /* =========================
      |   Relaciones principales
      * ========================= */
 
-    // SUGERENCIA: usa nombres semánticos; dejas alias al final por retro-compatibilidad
     public function estado()
     {
         return $this->belongsTo(EstadoHabitacion::class, 'id_estado_hab', 'id_estado_hab');
@@ -57,6 +83,11 @@ class Habitacione extends Model
     public function tipo()
     {
         return $this->belongsTo(TiposHabitacion::class, 'tipo_habitacion_id', 'id_tipo_hab');
+    }
+
+    public function tipoHabitacion()
+    {
+        return $this->tipo();
     }
 
     public function asignaciones()
@@ -71,7 +102,6 @@ class Habitacione extends Model
 
     public function amenidades()
     {
-        // Ajusta el modelo/pivot si tu naming difiere
         return $this->hasMany(HabitacionAmenidad::class, 'id_habitacion', 'id_habitacion');
     }
 
@@ -91,13 +121,11 @@ class Habitacione extends Model
     }
 
     /* =====================================
-     |   Scopes útiles (disponibilidad/fitros)
+     |   Scopes útiles (disponibilidad/filtros)
      * ===================================== */
 
     /**
      * Filtra habitaciones sin asignación confirmada/ocupada en el rango [inicio, fin)
-     * Nota: esto revisa asignaciones concretas; si manejas reservas por pool,
-     *       complementa con tu lógica de conteo por tipo.
      */
     public function scopeDisponiblesEntre($query, Carbon $inicio, Carbon $fin)
     {
@@ -113,8 +141,6 @@ class Habitacione extends Model
 
     /**
      * Filtra por un conjunto de features/amenidades garantizadas.
-     * Si tu relación amenidades es many-to-many, ajusta a whereHas con count exacto.
-     * Aquí, como es hasMany a un detalle, exigimos que existan todos los feature_id requeridos.
      */
     public function scopeWithFeatures($query, array $featureIds)
     {
@@ -156,7 +182,6 @@ class Habitacione extends Model
      |   Aliases legacy (mantener compat)
      * ====================================== */
 
-    // Mantengo tus aliases por si ya los usas con ->with('estado') ó ->with('tipo')
     public function id_estado_hab()
     {
         return $this->estado();
@@ -167,7 +192,6 @@ class Habitacione extends Model
         return $this->tipo();
     }
 
-    // Mantengo los nombres originales de colecciones por compatibilidad
     public function asignacion_habitacions_where_id_hab()
     {
         return $this->asignaciones();

@@ -21,7 +21,7 @@ use App\Http\Controllers\Api\habitaciones\HabitacionController;
 use App\Http\Controllers\Api\habitaciones\BloqueoOperativoController;
 use App\Http\Controllers\Api\habitaciones\DisponibilidadController;
 use App\Http\Controllers\Api\reserva\{
-  ReservaController, ReservaHabitacionController, ReservaServicioController, ReservaPoliticaController
+  ReservaController, ReservaHabitacionController, ReservaServicioController, ReservaPoliticaController, ServicioController
 };
 
 use App\Http\Controllers\Api\frontdesk\WalkInsController;
@@ -85,19 +85,36 @@ Route::apiResource('bloqueos', BloqueoOperativoController::class)->only(['index'
 Route::get('disponibilidad', DisponibilidadController::class);
 Route::get('availability/search', [AvailabilityController::class, 'search']);
 
+// Búsqueda por Código de Reserva (DEBE IR ANTES DE apiResource para evitar conflictos)
+Route::get('reservas/buscar', [ReservaController::class, 'buscarPorCodigo']);
+Route::get('reservas/codigos/estadisticas', [ReservaController::class, 'estadisticasCodigos']);
 
 // CRUD reserva
-Route::apiResource('reservas', ReservaController::class);
+// POST (store) sin autenticación obligatoria para permitir reservas desde recepción
+Route::post('reservas', [ReservaController::class, 'store']); // Web (con token) o Recepción (sin token)
+
+// El resto de operaciones CRUD requieren autenticación
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('reservas', [ReservaController::class, 'index']);
+    Route::get('reservas/{reserva}', [ReservaController::class, 'show']);
+    Route::put('reservas/{reserva}', [ReservaController::class, 'update']);
+    Route::patch('reservas/{reserva}', [ReservaController::class, 'update']);
+    Route::delete('reservas/{reserva}', [ReservaController::class, 'destroy']);
+});
 
 Route::apiResource('temporadas', TemporadaController::class);
 
 Route::apiResource('temporada-reglas', TemporadaReglaController::class);
 
+// CRUD servicios (catálogo de servicios)
+Route::apiResource('servicios', ServicioController::class);
+
 
 // Habitaciones por reserva
-Route::get('reservas/{reserva}/habitaciones',      [ReservaHabitacionController::class, 'index']);
-Route::post('reservas/{reserva}/habitaciones',     [ReservaHabitacionController::class, 'store']);
-Route::delete('reservas/{reserva}/habitaciones/{id}', [ReservaHabitacionController::class, 'destroy']);
+Route::get('reservas/{reserva}/habitaciones',                  [ReservaHabitacionController::class, 'index']);
+Route::post('reservas/{reserva}/habitaciones',                 [ReservaHabitacionController::class, 'store']);
+Route::put('reservas/{reserva}/habitaciones/{habitacion_id}',  [ReservaHabitacionController::class, 'update'])->where('habitacion_id', '[0-9]+');
+Route::delete('reservas/{reserva}/habitaciones/{habitacion_id}', [ReservaHabitacionController::class, 'destroy'])->where('habitacion_id', '[0-9]+');
 
 // Servicios por reserva
 Route::get('reservas/{reserva}/servicios',         [ReservaServicioController::class, 'index']);
@@ -111,13 +128,33 @@ Route::post('reservas/{reserva}/politicas',        [ReservaPoliticaController::c
 Route::delete('reservas/{reserva}/politicas/{id}', [ReservaPoliticaController::class, 'destroy']);
 
 // Acciones de reserva
+//Route::middleware('auth:sanctum')->group(function () {
+
+
 Route::post('reservas/{reserva}/confirmar', [ReservaController::class, 'confirmar']);
 Route::post('reservas/{reserva}/cancelar',  [ReservaController::class, 'cancelar']);
 Route::post('reservas/{reserva}/cotizar',   [ReservaController::class, 'cotizar']);
 Route::post('reservas/{reserva}/no-show',   [ReservaController::class, 'noShow']);
 Route::post('reservas/{reserva}/checkin',   [ReservaController::class, 'generarEstadia']);
 
+// Sistema de Pagos
+Route::post('reservas/{reserva}/pagos', [ReservaController::class, 'procesarPago']);
+Route::get('reservas/{reserva}/pagos', [ReservaController::class, 'listarPagos']);
 
+// Sistema de Cancelación con Políticas
+Route::get('reservas/{reserva}/cancelacion/preview', [ReservaController::class, 'previewCancelacion']);
+Route::post('reservas/{reserva}/cancelar-con-politica', [ReservaController::class, 'cancelarConPolitica']);
+
+// Sistema de Extensión de Estadía
+Route::post('reservas/{reserva}/extender', [ReservaController::class, 'extenderEstadia']);
+Route::post('reservas/{reserva}/extender/confirmar', [ReservaController::class, 'confirmarExtensionCambioHabitacion']);
+
+// Sistema de Monedas y Tipos de Cambio
+Route::get('monedas/soportadas', [ReservaController::class, 'monedasSoportadas']);
+Route::get('monedas/tipos-cambio', [ReservaController::class, 'tiposDeCambio']);
+Route::get('monedas/convertir', [ReservaController::class, 'convertirMoneda']);
+
+//});
 
 
 
