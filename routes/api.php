@@ -35,7 +35,7 @@ use App\Http\Controllers\Api\reserva\TemporadaReglaController;
 
 use App\Http\Controllers\Api\clientes\ClienteWizardController;
 use App\Http\Controllers\Api\clientes\ClienteFullController;
-
+use App\Http\Controllers\Api\Auth\ForgotPasswordController;
 
 use App\Http\Controllers\Api\Auth\AuthController;
 
@@ -46,6 +46,8 @@ use App\Http\Controllers\Api\Clientes\ClienteIntakeController; // ← si usarás
 
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/register', [AuthController::class, 'register']);
+Route::post('/forgot-password', [ForgotPasswordController::class, 'sendCode']);
+Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/auth/me', [AuthController::class, 'me']);
