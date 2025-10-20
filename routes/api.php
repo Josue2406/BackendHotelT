@@ -21,7 +21,7 @@ use App\Http\Controllers\Api\habitaciones\HabitacionController;
 use App\Http\Controllers\Api\habitaciones\BloqueoOperativoController;
 use App\Http\Controllers\Api\habitaciones\DisponibilidadController;
 use App\Http\Controllers\Api\reserva\{
-  ReservaController, ReservaHabitacionController, ReservaServicioController, ReservaPoliticaController, ServicioController
+  ReservaController, ReservaHabitacionController, ReservaServicioController, ReservaPoliticaController, ServicioController, ReporteController
 };
 
 use App\Http\Controllers\Api\frontdesk\WalkInsController;
@@ -155,6 +155,14 @@ Route::post('reservas/{reserva}/extender/confirmar', [ReservaController::class, 
 Route::get('monedas/soportadas', [ReservaController::class, 'monedasSoportadas']);
 Route::get('monedas/tipos-cambio', [ReservaController::class, 'tiposDeCambio']);
 Route::get('monedas/convertir', [ReservaController::class, 'convertirMoneda']);
+
+// Sistema de Reportes y Estadísticas
+Route::middleware('auth:sanctum')->prefix('reservas/reportes')->group(function () {
+    Route::get('kpis', [ReporteController::class, 'kpis']);
+    Route::get('series-temporales', [ReporteController::class, 'seriesTemporales']);
+    Route::get('distribuciones', [ReporteController::class, 'distribuciones']);
+    Route::get('export/pdf', [ReporteController::class, 'exportPdf']);
+});
 
 //});
 
