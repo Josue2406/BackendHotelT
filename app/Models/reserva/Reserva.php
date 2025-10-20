@@ -53,17 +53,28 @@ class Reserva extends Model
 		'id_estado_res' => 'int',
 		'fecha_creacion' => 'datetime',
 		'total_monto_reserva' => 'float',
+		'monto_pagado' => 'float',
+		'monto_pendiente' => 'float',
+		'porcentaje_minimo_pago' => 'float',
+		'pago_completo' => 'boolean',
 		'id_fuente' => 'int'
 	];
 
 	protected $fillable = [
 		'id_cliente',
 		'id_estado_res',
+		'codigo_reserva',
 		'fecha_creacion',
 		'total_monto_reserva',
+		'monto_pagado',
+		'monto_pendiente',
+		'porcentaje_minimo_pago',
+		'pago_completo',
 		'notas',
 		'id_fuente'
 	];
+
+	protected $appends = ['porcentaje_pagado', 'resumen_pagos', 'codigo_formateado'];
 
 	public function id_cliente()
 	{
@@ -151,6 +162,110 @@ public function asignaciones()
 public function estadias()
 {
     return $this->estadia_where_id_reserva();
+}
+
+/**
+ * Calcular el total pagado sumando todos los pagos completados
+ * IMPORTANTE: Suma monto_usd para mantener consistencia con la moneda base (USD)
+ */
+public function calcularMontoPagado(): float
+{
+    return $this->pagos()
+        ->whereIn('id_estado_pago', [
+            \App\Models\catalago_pago\EstadoPago::ESTADO_COMPLETADO,
+            \App\Models\catalago_pago\EstadoPago::ESTADO_PARCIAL
+        ])
+        ->sum('monto_usd');
+}
+
+/**
+ * Calcular el monto pendiente de pago
+ */
+public function calcularMontoPendiente(): float
+{
+    $pagado = $this->calcularMontoPagado();
+    $pendiente = $this->total_monto_reserva - $pagado;
+    return max(0, $pendiente); // No puede ser negativo
+}
+
+/**
+ * Verificar si se alcanzó el pago mínimo requerido
+ */
+public function alcanzoPagoMinimo(): bool
+{
+    if ($this->total_monto_reserva == 0) {
+        return true;
+    }
+
+    $porcentajePagado = ($this->monto_pagado / $this->total_monto_reserva) * 100;
+    return $porcentajePagado >= $this->porcentaje_minimo_pago;
+}
+
+/**
+ * Verificar si el pago está completo
+ */
+public function estaPagadoCompleto(): bool
+{
+    return $this->monto_pendiente <= 0.01; // Tolerancia de 1 centavo
+}
+
+/**
+ * Obtener el porcentaje pagado
+ */
+public function getPorcentajePagadoAttribute(): float
+{
+    if ($this->total_monto_reserva == 0) {
+        return 100.0;
+    }
+
+    return round(($this->monto_pagado / $this->total_monto_reserva) * 100, 2);
+}
+
+/**
+ * Actualizar montos de pago
+ */
+public function actualizarMontosPago(): void
+{
+    $montoPagado = $this->calcularMontoPagado();
+    $montoPendiente = $this->total_monto_reserva - $montoPagado;
+    $montoPendiente = max(0, $montoPendiente);
+    $pagoCompleto = $montoPendiente <= 0.01;
+
+    $this->updateQuietly([
+        'monto_pagado' => $montoPagado,
+        'monto_pendiente' => $montoPendiente,
+        'pago_completo' => $pagoCompleto,
+    ]);
+}
+
+/**
+ * Obtener información resumida de pagos
+ */
+public function getResumenPagosAttribute(): array
+{
+    return [
+        'total_reserva' => $this->total_monto_reserva,
+        'monto_pagado' => $this->monto_pagado,
+        'monto_pendiente' => $this->monto_pendiente,
+        'porcentaje_pagado' => $this->porcentaje_pagado,
+        'porcentaje_minimo_requerido' => $this->porcentaje_minimo_pago,
+        'alcanzo_minimo' => $this->alcanzoPagoMinimo(),
+        'pago_completo' => $this->pago_completo,
+        'puede_confirmar' => $this->alcanzoPagoMinimo(),
+    ];
+}
+
+/**
+ * Obtener código de reserva formateado
+ */
+public function getCodigoFormateadoAttribute(): ?string
+{
+    if (!$this->codigo_reserva) {
+        return null;
+    }
+
+    $service = app(\App\Services\CodigoReservaService::class);
+    return $service->formatearCodigo($this->codigo_reserva);
 }
 
 }

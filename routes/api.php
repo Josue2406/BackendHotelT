@@ -35,7 +35,7 @@ use App\Http\Controllers\Api\reserva\TemporadaReglaController;
 
 use App\Http\Controllers\Api\clientes\ClienteWizardController;
 use App\Http\Controllers\Api\clientes\ClienteFullController;
-
+use App\Http\Controllers\Api\Auth\ForgotPasswordController;
 
 use App\Http\Controllers\Api\Auth\AuthController;
 
@@ -46,6 +46,8 @@ use App\Http\Controllers\Api\Clientes\ClienteIntakeController; // ← si usarás
 
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/register', [AuthController::class, 'register']);
+Route::post('/forgot-password', [ForgotPasswordController::class, 'sendCode']);
+Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/auth/me', [AuthController::class, 'me']);
@@ -85,12 +87,23 @@ Route::apiResource('bloqueos', BloqueoOperativoController::class)->only(['index'
 Route::get('disponibilidad', DisponibilidadController::class);
 Route::get('availability/search', [AvailabilityController::class, 'search']);
 
+// Búsqueda por Código de Reserva (DEBE IR ANTES DE apiResource para evitar conflictos)
+Route::get('reservas/buscar', [ReservaController::class, 'buscarPorCodigo']);
+Route::get('reservas/codigos/estadisticas', [ReservaController::class, 'estadisticasCodigos']);
 
 // CRUD reserva
-Route::middleware('auth:sanctum')->group(function () {
+// POST (store) sin autenticación obligatoria para permitir reservas desde recepción
+Route::post('reservas', [ReservaController::class, 'store']); // Web (con token) o Recepción (sin token)
 
-Route::apiResource('reservas', ReservaController::class);
+// El resto de operaciones CRUD requieren autenticación
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('reservas', [ReservaController::class, 'index']);
+    Route::get('reservas/{reserva}', [ReservaController::class, 'show']);
+    Route::put('reservas/{reserva}', [ReservaController::class, 'update']);
+    Route::patch('reservas/{reserva}', [ReservaController::class, 'update']);
+    Route::delete('reservas/{reserva}', [ReservaController::class, 'destroy']);
 });
+
 Route::apiResource('temporadas', TemporadaController::class);
 
 Route::apiResource('temporada-reglas', TemporadaReglaController::class);
@@ -118,13 +131,30 @@ Route::delete('reservas/{reserva}/politicas/{id}', [ReservaPoliticaController::c
 
 // Acciones de reserva
 //Route::middleware('auth:sanctum')->group(function () {
-   
+
 
 Route::post('reservas/{reserva}/confirmar', [ReservaController::class, 'confirmar']);
 Route::post('reservas/{reserva}/cancelar',  [ReservaController::class, 'cancelar']);
 Route::post('reservas/{reserva}/cotizar',   [ReservaController::class, 'cotizar']);
 Route::post('reservas/{reserva}/no-show',   [ReservaController::class, 'noShow']);
 Route::post('reservas/{reserva}/checkin',   [ReservaController::class, 'generarEstadia']);
+
+// Sistema de Pagos
+Route::post('reservas/{reserva}/pagos', [ReservaController::class, 'procesarPago']);
+Route::get('reservas/{reserva}/pagos', [ReservaController::class, 'listarPagos']);
+
+// Sistema de Cancelación con Políticas
+Route::get('reservas/{reserva}/cancelacion/preview', [ReservaController::class, 'previewCancelacion']);
+Route::post('reservas/{reserva}/cancelar-con-politica', [ReservaController::class, 'cancelarConPolitica']);
+
+// Sistema de Extensión de Estadía
+Route::post('reservas/{reserva}/extender', [ReservaController::class, 'extenderEstadia']);
+Route::post('reservas/{reserva}/extender/confirmar', [ReservaController::class, 'confirmarExtensionCambioHabitacion']);
+
+// Sistema de Monedas y Tipos de Cambio
+Route::get('monedas/soportadas', [ReservaController::class, 'monedasSoportadas']);
+Route::get('monedas/tipos-cambio', [ReservaController::class, 'tiposDeCambio']);
+Route::get('monedas/convertir', [ReservaController::class, 'convertirMoneda']);
 
 //});
 
