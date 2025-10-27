@@ -1,5 +1,5 @@
 <?php
-// App/Http/Controllers/Api/frontdesk/WalkinController.php
+// App/Http/Controllers/Api/frontdesk/WalkInsController.php
 namespace App\Http\Controllers\Api\frontdesk;
 
 use App\Http\Controllers\Controller;
@@ -11,7 +11,7 @@ use App\Models\estadia\Estadia;
 use App\Models\check_in\AsignacionHabitacion;
 use App\Models\check_in\CheckIn;
 
-class WalkinController extends Controller
+class WalkInsController extends Controller
 {
     use \App\Http\Controllers\Api\frontdesk\Concerns\HabitacionAvailability;
 
