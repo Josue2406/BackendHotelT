@@ -8,6 +8,9 @@ use App\Http\Requests\reserva\CancelReservaRequest;
 use App\Http\Requests\reserva\CotizarReservaRequest;
 use App\Http\Requests\reserva\ProcesarPagoRequest;
 use App\Http\Requests\reserva\ExtenderEstadiaRequest;
+use App\Http\Requests\reserva\CambiarHabitacionRequest;
+use App\Http\Requests\reserva\ModificarFechasRequest;
+use App\Http\Requests\reserva\ReducirEstadiaRequest;
 use App\Models\reserva\Reserva;
 use App\Models\reserva\ReservaHabitacion;
 use App\Models\reserva\ReservaServicio;
@@ -19,6 +22,7 @@ use App\Models\estadia\Estadia;
 use App\Services\CodigoReservaService;
 use App\Services\ExtensionEstadiaService;
 use App\Services\ExchangeRateService;
+use App\Services\reserva\ModificacionReservaService;
 use App\Models\catalago_pago\Moneda;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -1110,6 +1114,117 @@ class ReservaController extends Controller
                 'message' => 'Error al convertir moneda',
                 'error' => $e->getMessage()
             ], 400);
+        }
+    }
+
+    // ===== Sistema de Modificación de Reservas =====
+
+    /**
+     * Cambiar habitación sin extensión de fechas
+     * POST /api/reservas/{reserva}/modificar/cambiar-habitacion
+     */
+    public function cambiarHabitacion(CambiarHabitacionRequest $request, Reserva $reserva)
+    {
+        try {
+            $service = app(ModificacionReservaService::class);
+
+            $resultado = $service->cambiarHabitacion(
+                $reserva,
+                $request->id_reserva_habitacion,
+                $request->id_habitacion_nueva,
+                $request->motivo
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Habitación cambiada exitosamente',
+                'data' => $resultado
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error al cambiar habitación', [
+                'id_reserva' => $reserva->id_reserva,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al cambiar la habitación',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Modificar fechas de reserva (check-in y/o check-out)
+     * POST /api/reservas/{reserva}/modificar/cambiar-fechas
+     */
+    public function modificarFechas(ModificarFechasRequest $request, Reserva $reserva)
+    {
+        try {
+            $service = app(ModificacionReservaService::class);
+
+            $resultado = $service->modificarFechas(
+                $reserva,
+                $request->id_reserva_habitacion,
+                $request->nueva_fecha_llegada ? Carbon::parse($request->nueva_fecha_llegada) : null,
+                $request->nueva_fecha_salida ? Carbon::parse($request->nueva_fecha_salida) : null,
+                $request->aplicar_politica ?? true
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Fechas modificadas exitosamente',
+                'data' => $resultado
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error al modificar fechas', [
+                'id_reserva' => $reserva->id_reserva,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al modificar las fechas',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Reducir estadía (checkout anticipado)
+     * POST /api/reservas/{reserva}/modificar/reducir-estadia
+     */
+    public function reducirEstadia(ReducirEstadiaRequest $request, Reserva $reserva)
+    {
+        try {
+            $service = app(ModificacionReservaService::class);
+
+            $resultado = $service->reducirEstadia(
+                $reserva,
+                $request->id_reserva_habitacion,
+                Carbon::parse($request->nueva_fecha_salida),
+                $request->aplicar_politica ?? true
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Estadía reducida exitosamente',
+                'data' => $resultado
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error al reducir estadía', [
+                'id_reserva' => $reserva->id_reserva,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al reducir la estadía',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 }
