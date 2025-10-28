@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api\frontdesk;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\frontdesk\WalkinStoreRequest;
+use App\Http\Requests\frontdesk\StoreWalkInRequest;
 use Illuminate\Support\Facades\DB;
 use App\Models\cliente\Cliente;
 use App\Models\hotel\Habitacion;
@@ -12,11 +12,11 @@ use App\Models\check_in\AsignacionHabitacion;
 use App\Models\check_in\CheckIn;
 
 class WalkinController extends Controller
-{
+{ 
     use \App\Http\Controllers\Api\frontdesk\Concerns\HabitacionAvailability;
 
     /** POST /frontdesk/walkin */
-    public function store(WalkinStoreRequest $req)
+    public function store(StoreWalkInRequest $req)
     {
         $data  = $req->validated();
 
