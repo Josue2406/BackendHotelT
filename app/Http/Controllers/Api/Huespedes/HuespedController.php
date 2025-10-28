@@ -1,5 +1,5 @@
 <?php
-namespace App\Http\Controllers\Api\Clientes;
+namespace App\Http\Controllers\Api\Huespedes;
 
 use App\Http\Controllers\Controller;
 use App\Models\cliente\Cliente;

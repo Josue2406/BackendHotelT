@@ -1,6 +1,7 @@
 
 <?php
 use App\Http\Controllers\Api\frontdesk\FrontDeskController; //Ruta nueva
+use App\Http\Controllers\Api\PagoController;
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\usuario\RolController;
@@ -21,7 +22,7 @@ use App\Http\Controllers\Api\habitaciones\HabitacionController;
 use App\Http\Controllers\Api\habitaciones\BloqueoOperativoController;
 use App\Http\Controllers\Api\habitaciones\DisponibilidadController;
 use App\Http\Controllers\Api\reserva\{
-  ReservaController, ReservaHabitacionController, ReservaServicioController, ReservaPoliticaController, ServicioController
+  ReservaController, ReservaHabitacionController, ReservaServicioController, ReservaPoliticaController, ServicioController, ReporteController
 };
 
 use App\Http\Controllers\Api\frontdesk\WalkInsController;
@@ -35,7 +36,7 @@ use App\Http\Controllers\Api\reserva\TemporadaReglaController;
 
 use App\Http\Controllers\Api\clientes\ClienteWizardController;
 use App\Http\Controllers\Api\clientes\ClienteFullController;
-
+use App\Http\Controllers\Api\Auth\ForgotPasswordController;
 
 use App\Http\Controllers\Api\Auth\AuthController;
 
@@ -46,6 +47,8 @@ use App\Http\Controllers\Api\Clientes\ClienteIntakeController; // ← si usarás
 
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/register', [AuthController::class, 'register']);
+Route::post('/forgot-password', [ForgotPasswordController::class, 'sendCode']);
+Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/auth/me', [AuthController::class, 'me']);
@@ -137,9 +140,22 @@ Route::post('reservas/{reserva}/cotizar',   [ReservaController::class, 'cotizar'
 Route::post('reservas/{reserva}/no-show',   [ReservaController::class, 'noShow']);
 Route::post('reservas/{reserva}/checkin',   [ReservaController::class, 'generarEstadia']);
 
-// Sistema de Pagos
+// Sistema de Pagos (Existentes)
 Route::post('reservas/{reserva}/pagos', [ReservaController::class, 'procesarPago']);
 Route::get('reservas/{reserva}/pagos', [ReservaController::class, 'listarPagos']);
+
+// ========== NUEVOS ENDPOINTS DE PAGOS - HOTEL LANAKU ==========
+// Procesamiento de pagos con múltiples divisas y conversión automática
+Route::post('pagos/inicial', [PagoController::class, 'pagoInicial']);          // Pago inicial 30%
+Route::post('pagos/restante', [PagoController::class, 'pagoRestante']);        // Pago saldo restante
+Route::post('pagos/completo', [PagoController::class, 'pagoCompleto']);        // Pago completo 100%
+
+// Endpoints auxiliares para el sistema de pagos
+Route::get('pagos/divisas-principales', [PagoController::class, 'divisasPrincipales']);  // USD, CRC, EUR
+Route::get('pagos/metodos', [PagoController::class, 'metodosPago']);                    // Métodos activos
+Route::get('pagos/tipo-cambio/{moneda}', [PagoController::class, 'tipoCambio']);        // Tipo de cambio actual
+Route::post('pagos/calcular-precio', [PagoController::class, 'calcularPrecio']);        // Calcular en 3 divisas
+// ================================================================
 
 // Sistema de Cancelación con Políticas
 Route::get('reservas/{reserva}/cancelacion/preview', [ReservaController::class, 'previewCancelacion']);
@@ -149,10 +165,23 @@ Route::post('reservas/{reserva}/cancelar-con-politica', [ReservaController::clas
 Route::post('reservas/{reserva}/extender', [ReservaController::class, 'extenderEstadia']);
 Route::post('reservas/{reserva}/extender/confirmar', [ReservaController::class, 'confirmarExtensionCambioHabitacion']);
 
+// Sistema de Modificación de Reservas
+Route::post('reservas/{reserva}/modificar/cambiar-habitacion', [ReservaController::class, 'cambiarHabitacion']);
+Route::post('reservas/{reserva}/modificar/cambiar-fechas', [ReservaController::class, 'modificarFechas']);
+Route::post('reservas/{reserva}/modificar/reducir-estadia', [ReservaController::class, 'reducirEstadia']);
+
 // Sistema de Monedas y Tipos de Cambio
 Route::get('monedas/soportadas', [ReservaController::class, 'monedasSoportadas']);
 Route::get('monedas/tipos-cambio', [ReservaController::class, 'tiposDeCambio']);
 Route::get('monedas/convertir', [ReservaController::class, 'convertirMoneda']);
+
+// Sistema de Reportes y Estadísticas
+Route::middleware('auth:sanctum')->prefix('reservas/reportes')->group(function () {
+    Route::get('kpis', [ReporteController::class, 'kpis']);
+    Route::get('series-temporales', [ReporteController::class, 'seriesTemporales']);
+    Route::get('distribuciones', [ReporteController::class, 'distribuciones']);
+    Route::get('export/pdf', [ReporteController::class, 'exportPdf']);
+});
 
 //});
 

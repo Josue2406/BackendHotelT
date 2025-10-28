@@ -283,6 +283,92 @@ class ExchangeRateService
     }
 
     /**
+     * Obtener detalles completos de conversión para mostrar al cliente
+     * Usado principalmente en el flujo de pagos
+     *
+     * @param float $monto Monto en la moneda seleccionada
+     * @param string $monedaSeleccionada Moneda en la que el cliente pagará
+     * @return array
+     */
+    public function obtenerDetallesPago(float $monto, string $monedaSeleccionada): array
+    {
+        $monedaSeleccionada = strtoupper($monedaSeleccionada);
+        $tipoCambio = $this->obtenerTipoCambio($monedaSeleccionada);
+        $montoUSD = $this->convertirAUSD($monto, $monedaSeleccionada);
+
+        return [
+            'monto_pagado' => round($monto, 2),
+            'moneda_pago' => $monedaSeleccionada,
+            'moneda_nombre' => self::MONEDAS_SOPORTADAS[$monedaSeleccionada] ?? $monedaSeleccionada,
+            'simbolo_moneda' => $this->obtenerSimbolo($monedaSeleccionada),
+            'tipo_cambio' => $tipoCambio,
+            'monto_usd' => round($montoUSD, 2),
+            'equivalente_texto' => "{$this->obtenerSimbolo($monedaSeleccionada)}" . number_format($monto, 2) . " = $" . number_format($montoUSD, 2) . " USD",
+            'fecha_tipo_cambio' => now()->toDateString(),
+        ];
+    }
+
+    /**
+     * Calcular monto en múltiples divisas principales (USD, CRC, EUR)
+     * Usado para mostrar precios en las 3 divisas principales del hotel
+     *
+     * @param float $montoUSD Precio base en USD
+     * @return array
+     */
+    public function calcularPrecioMultidivisa(float $montoUSD): array
+    {
+        $crc = $this->convertirDesdeUSD($montoUSD, 'CRC');
+        $eur = $this->convertirDesdeUSD($montoUSD, 'EUR');
+
+        return [
+            'usd' => [
+                'monto' => round($montoUSD, 2),
+                'simbolo' => '$',
+                'codigo' => 'USD',
+                'nombre' => 'Dólar Estadounidense',
+                'formato' => '$' . number_format($montoUSD, 2),
+            ],
+            'crc' => [
+                'monto' => $crc['monto'],
+                'simbolo' => '₡',
+                'codigo' => 'CRC',
+                'nombre' => 'Colón Costarricense',
+                'tipo_cambio' => $crc['tipo_cambio'],
+                'formato' => '₡' . number_format($crc['monto'], 2),
+            ],
+            'eur' => [
+                'monto' => $eur['monto'],
+                'simbolo' => '€',
+                'codigo' => 'EUR',
+                'nombre' => 'Euro',
+                'tipo_cambio' => $eur['tipo_cambio'],
+                'formato' => '€' . number_format($eur['monto'], 2),
+            ],
+        ];
+    }
+
+    /**
+     * Obtener las 3 divisas principales del Hotel Lanaku
+     *
+     * @return array
+     */
+    public function obtenerDivisasPrincipales(): array
+    {
+        return ['USD', 'CRC', 'EUR'];
+    }
+
+    /**
+     * Validar que la moneda sea una de las principales del hotel
+     *
+     * @param string $codigoMoneda
+     * @return bool
+     */
+    public function esDivisaPrincipal(string $codigoMoneda): bool
+    {
+        return in_array(strtoupper($codigoMoneda), $this->obtenerDivisasPrincipales());
+    }
+
+    /**
      * Tipos de cambio de fallback (valores aproximados)
      * Se usan si la API falla
      *
