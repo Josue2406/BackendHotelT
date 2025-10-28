@@ -514,9 +514,61 @@ class ReservaController extends Controller
                 return $pago;
             });
 
-            // Recargar la reserva actualizada con las relaciones necesarias
-            $reserva->refresh();
-            $pago->load('moneda', 'metodoPago', 'estadoPago');
+            $reserva->refresh()->load(['cliente','estado']);
+        $pago->load('moneda', 'metodoPago', 'estadoPago');
+
+        // Armamos payload para correo
+        $porcentaje = ($reserva->total_monto_reserva > 0)
+            ? round(($reserva->monto_pagado / $reserva->total_monto_reserva) * 100, 2)
+            : 0;
+
+        $hitos = [];
+        // Marca los hitos según tu negocio
+        if ($porcentaje >= 30 && $porcentaje < 100) {
+            $hitos[] = '✅ Se alcanzó el anticipo mínimo del 30%. Tu reserva queda confirmada.';
+        }
+        if ($porcentaje >= 100 || ($reserva->monto_pendiente ?? 0) <= 0) {
+            $hitos[] = '🎉 Pago completado al 100%. ¡Gracias!';
+        }
+
+        $payload = [
+            'id_reserva_pago' => $pago->id_reserva_pago,
+            'monto'           => $pago->monto,
+            'moneda'          => [
+                'codigo' => $pago->moneda->codigo,
+                'nombre' => $pago->moneda->nombre,
+            ],
+            'tipo_cambio'           => $pago->tipo_cambio,
+            'tipo_cambio_formateado'=> "1 USD = " . number_format($pago->tipo_cambio, 6) . " {$pago->moneda->codigo}",
+            'monto_usd'             => $pago->monto_usd,
+            'metodo_pago'           => $pago->metodoPago->nombre ?? null,
+            'estado_pago'           => $pago->estadoPago->nombre ?? null,
+            'referencia'            => $pago->referencia,
+            'notas'                 => $pago->notas,
+            'fecha_pago'            => $pago->fecha_pago,
+
+            'reserva' => [
+                'total_monto_reserva' => $reserva->total_monto_reserva,
+                'monto_pagado'        => $reserva->monto_pagado,
+                'monto_pendiente'     => $reserva->monto_pendiente,
+                'porcentaje_pagado'   => $porcentaje,
+            ],
+            'hitos' => $hitos,
+        ];
+
+        // Enviar correo DESPUÉS del commit
+        DB::afterCommit(function () use ($reserva, $payload) {
+            $fresh = $reserva->fresh()->load(['cliente','estado','fuente','habitaciones.habitacion']);
+            if ($fresh->cliente?->email) {
+                try {
+                    $fresh->cliente->notify(new ReservaPagoRecibido($payload, $fresh));
+                } catch (\Throwable $e) {
+                    Log::error('Error enviando correo de pago recibido: '.$e->getMessage(), [
+                        'reserva_id' => $fresh->id_reserva,
+                    ]);
+                }
+            }
+        });
 
             return response()->json([
                 'success' => true,
@@ -615,67 +667,151 @@ class ReservaController extends Controller
      * Preview de cancelación (muestra reembolso sin confirmar)
      * GET /api/reservas/{reserva}/cancelacion/preview
      */
+    // public function previewCancelacion(Reserva $reserva)
+    // {
+    //     try {
+    //         // Obtener la fecha de llegada más próxima
+    //         $primeraLlegada = $reserva->habitaciones()
+    //             ->orderBy('fecha_llegada', 'asc')
+    //             ->first();
+
+    //         if (!$primeraLlegada) {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'No se encontraron habitaciones en esta reserva'
+    //             ], 400);
+    //         }
+
+    //         $fechaLlegada = Carbon::parse($primeraLlegada->fecha_llegada);
+    //         $hoy = Carbon::now();
+    //         $diasAnticipacion = $hoy->diffInDays($fechaLlegada, false);
+
+    //         // Si la fecha ya pasó, días negativos
+    //         if ($diasAnticipacion < 0) {
+    //             $diasAnticipacion = 0; // Tratarlo como no-show
+    //         }
+
+    //         // Calcular reembolso según política
+    //         $resultado = PoliticaCancelacion::calcularReembolso(
+    //             $reserva->monto_pagado,
+    //             (int) $diasAnticipacion
+    //         );
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'data' => [
+    //                 'puede_cancelar' => true,
+    //                 'dias_anticipacion' => (int) $diasAnticipacion,
+    //                 'fecha_llegada' => $fechaLlegada->format('Y-m-d'),
+    //                 'politica_aplicada' => [
+    //                     'id_politica' => $resultado['politica']->id_politica,
+    //                     'nombre' => $resultado['politica']->nombre,
+    //                     'descripcion' => $resultado['politica']->descripcion,
+    //                 ],
+    //                 'monto_pagado' => $reserva->monto_pagado,
+    //                 'reembolso' => $resultado['reembolso'],
+    //                 'penalidad' => $resultado['penalidad'],
+    //                 'porcentaje_reembolso' => $reserva->monto_pagado > 0
+    //                     ? round(($resultado['reembolso'] / $reserva->monto_pagado) * 100, 2)
+    //                     : 0,
+    //                 'mensaje' => $resultado['mensaje'],
+    //             ]
+    //         ]);
+
+    //     } catch (\Exception $e) {
+    //         Log::error('Error en preview de cancelación', [
+    //             'id_reserva' => $reserva->id_reserva,
+    //             'error' => $e->getMessage()
+    //         ]);
+
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Error al calcular preview de cancelación',
+    //             'error' => $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
+
+    // /**
+    //  * Confirmar cancelación con cálculo de reembolso
+    //  * POST /api/reservas/{reserva}/cancelar-con-politica
+    //  */
+    // public function cancelarConPolitica(Request $request, Reserva $reserva)
+    // {
+    //     $request->validate([
+    //         'motivo' => 'nullable|string|max:500',
+    //         'solicitar_reembolso' => 'boolean',
+    //     ]);
+
+    //     try {
+    //         return DB::transaction(function () use ($request, $reserva) {
+    //             // Obtener preview de cancelación
+    //             $previewResponse = $this->previewCancelacion($reserva);
+    //             $preview = $previewResponse->getData(true)['data'];
+
+    //             // Guardar estado anterior
+    //             $estadoAnterior = $reserva->estado->nombre ?? 'Desconocido';
+
+    //             // Cambiar estado a cancelada (el Observer liberará las habitaciones)
+    //             $reserva->update([
+    //                 'id_estado_res' => EstadoReserva::ESTADO_CANCELADA
+    //             ]);
+
+    //             // Recargar reserva con relaciones
+    //             $reserva->load('habitaciones.habitacion.estado');
+
+    //             return response()->json([
+    //                 'success' => true,
+    //                 'message' => 'Reserva cancelada exitosamente',
+    //                 'data' => [
+    //                     'id_reserva' => $reserva->id_reserva,
+    //                     'estado_anterior' => $estadoAnterior,
+    //                     'estado_actual' => 'Cancelada',
+    //                     'fecha_cancelacion' => now()->format('Y-m-d H:i:s'),
+    //                     'dias_anticipacion' => $preview['dias_anticipacion'],
+    //                     'politica' => $preview['politica_aplicada']['nombre'],
+    //                     'monto_pagado' => $preview['monto_pagado'],
+    //                     'reembolso' => $preview['reembolso'],
+    //                     'penalidad' => $preview['penalidad'],
+    //                     'habitaciones_liberadas' => $reserva->habitaciones->pluck('id_habitacion')->toArray(),
+    //                     'motivo' => $request->input('motivo'),
+    //                 ]
+    //             ]);
+    //         });
+
+    //     } catch (\Exception $e) {
+    //         Log::error('Error al cancelar reserva', [
+    //             'id_reserva' => $reserva->id_reserva,
+    //             'error' => $e->getMessage()
+    //         ]);
+
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Error al cancelar la reserva',
+    //             'error' => $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
     public function previewCancelacion(Reserva $reserva)
     {
         try {
-            // Obtener la fecha de llegada más próxima
-            $primeraLlegada = $reserva->habitaciones()
-                ->orderBy('fecha_llegada', 'asc')
-                ->first();
-
-            if (!$primeraLlegada) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No se encontraron habitaciones en esta reserva'
-                ], 400);
-            }
-
-            $fechaLlegada = Carbon::parse($primeraLlegada->fecha_llegada);
-            $hoy = Carbon::now();
-            $diasAnticipacion = $hoy->diffInDays($fechaLlegada, false);
-
-            // Si la fecha ya pasó, días negativos
-            if ($diasAnticipacion < 0) {
-                $diasAnticipacion = 0; // Tratarlo como no-show
-            }
-
-            // Calcular reembolso según política
-            $resultado = PoliticaCancelacion::calcularReembolso(
-                $reserva->monto_pagado,
-                (int) $diasAnticipacion
-            );
+            $preview = $this->buildPreviewCancelacion($reserva);
 
             return response()->json([
                 'success' => true,
-                'data' => [
-                    'puede_cancelar' => true,
-                    'dias_anticipacion' => (int) $diasAnticipacion,
-                    'fecha_llegada' => $fechaLlegada->format('Y-m-d'),
-                    'politica_aplicada' => [
-                        'id_politica' => $resultado['politica']->id_politica,
-                        'nombre' => $resultado['politica']->nombre,
-                        'descripcion' => $resultado['politica']->descripcion,
-                    ],
-                    'monto_pagado' => $reserva->monto_pagado,
-                    'reembolso' => $resultado['reembolso'],
-                    'penalidad' => $resultado['penalidad'],
-                    'porcentaje_reembolso' => $reserva->monto_pagado > 0
-                        ? round(($resultado['reembolso'] / $reserva->monto_pagado) * 100, 2)
-                        : 0,
-                    'mensaje' => $resultado['mensaje'],
-                ]
+                'data'    => $preview,
             ]);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Error en preview de cancelación', [
                 'id_reserva' => $reserva->id_reserva,
-                'error' => $e->getMessage()
+                'error'      => $e->getMessage(),
             ]);
 
             return response()->json([
                 'success' => false,
                 'message' => 'Error al calcular preview de cancelación',
-                'error' => $e->getMessage()
+                'error'   => $e->getMessage(),
             ], 500);
         }
     }
@@ -687,58 +823,127 @@ class ReservaController extends Controller
     public function cancelarConPolitica(Request $request, Reserva $reserva)
     {
         $request->validate([
-            'motivo' => 'nullable|string|max:500',
-            'solicitar_reembolso' => 'boolean',
+            'motivo'               => 'nullable|string|max:500',
+            'solicitar_reembolso'  => 'boolean',
         ]);
 
         try {
             return DB::transaction(function () use ($request, $reserva) {
-                // Obtener preview de cancelación
-                $previewResponse = $this->previewCancelacion($reserva);
-                $preview = $previewResponse->getData(true)['data'];
 
-                // Guardar estado anterior
+                // 1) Calcula preview (array puro, sin Response)
+                $preview = $this->buildPreviewCancelacion($reserva);
+
+                // 2) Guarda estado anterior y actualiza a Cancelada
                 $estadoAnterior = $reserva->estado->nombre ?? 'Desconocido';
 
-                // Cambiar estado a cancelada (el Observer liberará las habitaciones)
                 $reserva->update([
-                    'id_estado_res' => EstadoReserva::ESTADO_CANCELADA
+                    'id_estado_res' => EstadoReserva::ESTADO_CANCELADA,
+                    // opcional: 'motivo_cancelacion' => $request->input('motivo'),
                 ]);
 
-                // Recargar reserva con relaciones
-                $reserva->load('habitaciones.habitacion.estado');
+                // 3) Recarga relaciones (el Observer liberará habitaciones)
+                $reserva->load('cliente','estado','habitaciones.habitacion.estado');
+
+                // 4) Construye payload final para notificación / respuesta
+                $payload = [
+                    'id_reserva'        => $reserva->id_reserva,
+                    'estado_anterior'   => $estadoAnterior,
+                    'estado_actual'     => 'Cancelada',
+                    'fecha_cancelacion' => now()->format('Y-m-d H:i:s'),
+                    'dias_anticipacion' => $preview['dias_anticipacion'],
+                    'politica'          => $preview['politica_aplicada'],
+                    'monto_pagado'      => $preview['monto_pagado'],
+                    'reembolso'         => $preview['reembolso'],
+                    'penalidad'         => $preview['penalidad'],
+                    'porcentaje_reembolso' => $preview['porcentaje_reembolso'],
+                    'mensaje'           => $preview['mensaje'],
+                    'habitaciones_liberadas' => $reserva->habitaciones->pluck('id_habitacion')->toArray(),
+                    'motivo'            => $request->input('motivo'),
+                    'solicitar_reembolso' => (bool)$request->boolean('solicitar_reembolso'),
+                ];
+
+                // 5) Notificar después del commit para evitar correos en rollback
+                DB::afterCommit(function () use ($reserva, $payload) {
+                    $fresh = $reserva->fresh()->load(['cliente','estado','fuente','habitaciones.habitacion']);
+                    if ($fresh->cliente?->email) {
+                        try {
+                            $fresh->cliente->notify(new ReservaCancelada($payload, $fresh));
+                        } catch (\Throwable $e) {
+                            Log::error('Error enviando correo de cancelación: '.$e->getMessage(), [
+                                'reserva_id' => $fresh->id_reserva,
+                            ]);
+                        }
+                    }
+                });
 
                 return response()->json([
                     'success' => true,
                     'message' => 'Reserva cancelada exitosamente',
-                    'data' => [
-                        'id_reserva' => $reserva->id_reserva,
-                        'estado_anterior' => $estadoAnterior,
-                        'estado_actual' => 'Cancelada',
-                        'fecha_cancelacion' => now()->format('Y-m-d H:i:s'),
-                        'dias_anticipacion' => $preview['dias_anticipacion'],
-                        'politica' => $preview['politica_aplicada']['nombre'],
-                        'monto_pagado' => $preview['monto_pagado'],
-                        'reembolso' => $preview['reembolso'],
-                        'penalidad' => $preview['penalidad'],
-                        'habitaciones_liberadas' => $reserva->habitaciones->pluck('id_habitacion')->toArray(),
-                        'motivo' => $request->input('motivo'),
-                    ]
+                    'data'    => $payload,
                 ]);
             });
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Error al cancelar reserva', [
                 'id_reserva' => $reserva->id_reserva,
-                'error' => $e->getMessage()
+                'error'      => $e->getMessage(),
             ]);
 
             return response()->json([
                 'success' => false,
                 'message' => 'Error al cancelar la reserva',
-                'error' => $e->getMessage()
+                'error'   => $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * --- PRIVADO ---
+     * Cálculo de preview (array puro) para reutilizar en ambos flujos.
+     */
+    private function buildPreviewCancelacion(Reserva $reserva): array
+    {
+        // 1) Primera llegada
+        $primeraLlegada = $reserva->habitaciones()
+            ->orderBy('fecha_llegada', 'asc')
+            ->first();
+
+        if (!$primeraLlegada) {
+            throw new \RuntimeException('No se encontraron habitaciones en esta reserva');
+        }
+
+        // 2) Anticipación: si ya pasó, tratar como 0 (no-show)
+        $fechaLlegada     = Carbon::parse($primeraLlegada->fecha_llegada);
+        $hoy              = Carbon::now();
+        $diasAnticipacion = $hoy->diffInDays($fechaLlegada, false);
+        if ($diasAnticipacion < 0) {
+            $diasAnticipacion = 0;
+        }
+
+        // 3) Política: usa el método que manejes (coherente con tu proyecto)
+        // Si en otros lados usas calcularReembolsoHotelLanaku(...), unifica aquí.
+        $resultado = PoliticaCancelacion::calcularReembolso(
+            $reserva->monto_pagado,
+            (int) $diasAnticipacion
+        );
+
+        return [
+            'puede_cancelar'   => true,
+            'dias_anticipacion'=> (int) $diasAnticipacion,
+            'fecha_llegada'    => $fechaLlegada->format('Y-m-d'),
+            'politica_aplicada'=> [
+                'id_politica' => $resultado['politica']->id_politica ?? null,
+                'nombre'      => $resultado['politica']->nombre     ?? 'N/D',
+                'descripcion' => $resultado['politica']->descripcion ?? null,
+            ],
+            'monto_pagado'     => $reserva->monto_pagado,
+            'reembolso'        => $resultado['reembolso'],
+            'penalidad'        => $resultado['penalidad'],
+            'porcentaje_reembolso' => $reserva->monto_pagado > 0
+                ? round(($resultado['reembolso'] / $reserva->monto_pagado) * 100, 2)
+                : 0,
+            'mensaje'          => $resultado['mensaje'] ?? null,
+        ];
     }
 
     // ===== Sistema de Extensión de Estadía =====
