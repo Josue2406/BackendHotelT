@@ -25,7 +25,8 @@ use App\Http\Controllers\Api\reserva\{
   ReservaController, ReservaHabitacionController, ReservaServicioController, ReservaPoliticaController, ServicioController, ReporteController
 };
 
-use App\Http\Controllers\Api\frontdesk\WalkInsController;
+
+use App\Http\Controllers\Api\frontdesk\WalkinController;
 use App\Http\Controllers\Api\frontdesk\ReservasCheckinController;
 use App\Http\Controllers\Api\frontdesk\EstadoEstadiaController;
 use App\Http\Controllers\Api\frontdesk\EstadiasController;
@@ -210,7 +211,9 @@ Check-out (crea evento)
 
 Route::prefix('frontdesk')->group(function () {
     // Walk-in
-    Route::post('/walkin', [WalkInsController::class, 'store']);
+    Route::post('/walkin', [WalkInController::class, 'store']);
+
+//Route::post('/frontdesk/walkin', [WalkinController::class, 'store']);
 
     // Check-in desde reserva
     Route::post('/reserva/{reserva}/checkin', [ReservasCheckinController::class, 'store']);
