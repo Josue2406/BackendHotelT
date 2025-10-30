@@ -299,6 +299,38 @@ class ReservaController extends Controller
         return $reserva->fresh(['habitaciones.habitacion.estado']);
     }
 
+public function checkIn($codigo)
+{
+    $reserva = Reserva::where('codigo', $codigo)->first();
+
+    if (!$reserva) {
+        return response()->json(['message' => 'Reserva no encontrada'], 404);
+    }
+
+    // Validar estado actual
+    if ($reserva->estado !== 'confirmada') {
+        return response()->json([
+            'message' => 'No se puede realizar el check-in porque la reserva no está confirmada.'
+        ], 400);
+    }
+
+    // Actualizar estado
+    $reserva->estado = 'check_in';
+    $reserva->fecha_check_in = now();
+    $reserva->save();
+
+    return response()->json([
+        'message' => 'Check-in realizado exitosamente.',
+        'reserva' => $reserva
+    ], 200);
+}
+
+
+
+
+
+
+
     public function cancelar(CancelReservaRequest $r, Reserva $reserva) {
         // 1) marcar estado cancelada - El Observer se encargará de liberar las habitaciones
         $reserva->update(['id_estado_res' => EstadoReserva::ESTADO_CANCELADA]);

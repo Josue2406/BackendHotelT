@@ -140,6 +140,8 @@ Route::post('reservas/{reserva}/cancelar',  [ReservaController::class, 'cancelar
 Route::post('reservas/{reserva}/cotizar',   [ReservaController::class, 'cotizar']);
 Route::post('reservas/{reserva}/no-show',   [ReservaController::class, 'noShow']);
 Route::post('reservas/{reserva}/checkin',   [ReservaController::class, 'generarEstadia']);
+Route::post('reservas/{reserva}/check-in',  [ReservaController::class, 'checkIn']);
+
 
 // Sistema de Pagos (Existentes)
 Route::post('reservas/{reserva}/pagos', [ReservaController::class, 'procesarPago']);
@@ -250,7 +252,7 @@ Route::prefix('frontdesk')->group(function () {
 
 Route::prefix('clientes')->group(function () {
     Route::get('/',            [ClienteController::class, 'index']);
-    //Route::post('/',           [ClienteController::class, 'store']);
+    Route::post('/',           [ClienteController::class, 'store']);
     Route::get('{cliente}',    [ClienteController::class, 'show']);
     Route::patch('{cliente}',    [ClienteController::class, 'update']);
     Route::delete('{cliente}', [ClienteController::class, 'destroy']);
