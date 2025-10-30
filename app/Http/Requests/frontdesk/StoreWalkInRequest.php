@@ -20,6 +20,9 @@ class StoreWalkInRequest extends FormRequest
         if (!isset($data['id_hab']) && isset($data['id_habitacion'])) {
             $data['id_hab'] = $data['id_habitacion'];
         }
+        if (!isset($data['id_tipo_hab']) && isset($data['id_tipos_hab'])) {
+            $data['id_tipo_hab'] = $data['id_tipos_hab'];
+        }
 
         if (isset($data['cedula']) && is_string($data['cedula'])) {
             $data['cedula'] = trim($data['cedula']);
@@ -36,8 +39,10 @@ class StoreWalkInRequest extends FormRequest
             'cedula'             => ['nullable','string','max:50'],
 
             // Habitación y tipo
-           // 'id_tipos_hab'        => ['required','integer','exists:tipo_habitacion,id_tipos_hab'],
-            'id_habitacion'             => ['required','integer','exists:habitaciones,id_habitacion'], // <-- ajusta si tu PK es id_habitacion
+            'id_tipos_hab'       => ['nullable','integer','exists:tipo_habitacion,id_tipos_hab'],
+            'id_tipo_hab'        => ['nullable','integer','exists:tipo_habitacion,id_tipos_hab'],
+            'id_habitacion'      => ['required','integer','exists:habitaciones,id_habitacion'],
+            'id_hab'             => ['nullable','integer','exists:habitaciones,id_habitacion'],
 
             // Fechas
             'fecha_llegada'      => ['required','date','before_or_equal:fecha_salida'],
@@ -72,7 +77,7 @@ class StoreWalkInRequest extends FormRequest
     {
         $this->merge([
             'id_cliente'  => $this->filled('id_cliente') ? (int) $this->input('id_cliente') : null,
-            'id_tipo_hab' => (int) $this->input('id_tipo_hab'),
+            'id_tipo_hab' => $this->filled('id_tipo_hab') ? (int) $this->input('id_tipo_hab') : null,
             'id_hab'      => (int) $this->input('id_hab'),
             'adultos'     => (int) $this->input('adultos'),
             'ninos'       => $this->filled('ninos') ? (int) $this->input('ninos') : 0,

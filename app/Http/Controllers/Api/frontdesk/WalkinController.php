@@ -5,7 +5,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\frontdesk\StoreWalkInRequest;
 use Illuminate\Support\Facades\DB;
 use App\Models\cliente\Cliente;
-use App\Models\hotel\Habitacion;
+use App\Models\habitacion\Habitacione;
 use App\Models\estadia\Estadia;
 use App\Models\check_in\AsignacionHabitacion;
 use App\Models\check_in\CheckIn;
@@ -29,9 +29,9 @@ class WalkinController extends Controller
             }
         }
 
-        // 2) Validar que la habitación pertenezca al tipo elegido
-        $habitacion = Habitacion::findOrFail((int) $data['id_hab']);
-        if ((int) $habitacion->id_tipo_hab !== (int) $data['id_tipo_hab']) {
+        // 2) Validar que la habitación pertenezca al tipo elegido (si se proporcionó el tipo)
+        $habitacion = Habitacione::findOrFail((int) $data['id_hab']);
+        if (!empty($data['id_tipo_hab']) && (int) $habitacion->id_tipo_hab !== (int) $data['id_tipo_hab']) {
             return response()->json(['message' => 'La habitación seleccionada no coincide con el tipo elegido.'], 422);
         }
 
@@ -92,7 +92,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\frontdesk\StoreWalkInRequest;
 use Illuminate\Support\Facades\DB;
 use App\Models\cliente\Cliente;
-use App\Models\hotel\Habitacion;
+use App\Models\habitacion\Habitacione;
 use App\Models\estadia\Estadia;
 use App\Models\check_in\AsignacionHabitacion;
 use App\Models\check_in\CheckIn;
@@ -116,7 +116,7 @@ class WalkinController extends Controller
         }
 
         // 2) Validar que la habitación pertenezca al tipo elegido
-        $habitacion = Habitacion::findOrFail((int)$data['id_hab']);
+        $habitacion = Habitacione::findOrFail((int)$data['id_hab']);
         if ((int)$habitacion->id_tipo_hab !== (int)$data['id_tipo_hab']) {
             return response()->json(['message' => 'La habitación seleccionada no coincide con el tipo elegido.'], 422);
         }
