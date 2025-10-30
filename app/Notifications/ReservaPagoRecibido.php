@@ -3,17 +3,17 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Contracts\Queue\ShouldQueue; // opcional si usas colas
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class ReservaCancelada extends Notification
+class ReservaPagoRecibido extends Notification // implements ShouldQueue
 {
     use Queueable;
 
     public function __construct(
-        public array $payload, // detalles de la cancelación (preview + extras)
-        public $reserva        // instancia de Reserva con relaciones
+        public array $payload,   // detalles del pago + totales de la reserva
+        public $reserva          // instancia de Reserva con relaciones
     ) {}
 
     public function via(object $notifiable): array
@@ -24,8 +24,8 @@ class ReservaCancelada extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Cancelación de tu reserva #'.$this->reserva->id_reserva)
-            ->markdown('mail.reservas.cancelada', [
+            ->subject('Pago recibido - Reserva #'.$this->reserva->id_reserva)
+            ->markdown('mail.reservas.pago', [
                 'reserva' => $this->reserva,
                 'cliente' => $notifiable,
                 'payload' => $this->payload,

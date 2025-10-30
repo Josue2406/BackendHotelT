@@ -147,4 +147,79 @@ class ReservaPago extends Model
 
 		return "{$monto} - {$metodo} ({$estado})";
 	}
+
+	/**
+	 * Obtener detalles completos del pago con conversión
+	 */
+	public function getDetallesConversionAttribute(): array
+	{
+		$moneda = $this->moneda;
+		$codigoMoneda = $moneda->codigo ?? 'USD';
+		$simbolo = $moneda->simbolo ?? '$';
+
+		return [
+			'monto_pagado' => $this->monto,
+			'moneda_pago' => $codigoMoneda,
+			'simbolo' => $simbolo,
+			'tipo_cambio' => $this->tipo_cambio,
+			'monto_usd' => $this->monto_usd,
+			'equivalente' => "{$simbolo}" . number_format($this->monto, 2) . " = $" . number_format($this->monto_usd, 2) . " USD",
+			'fecha_pago' => $this->fecha_pago->format('Y-m-d H:i:s'),
+		];
+	}
+
+	/**
+	 * Verificar si el pago está completado
+	 */
+	public function estaCompletado(): bool
+	{
+		$estadoPago = $this->estadoPago;
+		return $estadoPago && in_array($estadoPago->nombre, ['COMPLETADO', 'Completado', 'completado']);
+	}
+
+	/**
+	 * Verificar si el pago está pendiente
+	 */
+	public function estaPendiente(): bool
+	{
+		$estadoPago = $this->estadoPago;
+		return $estadoPago && in_array($estadoPago->nombre, ['PENDIENTE', 'Pendiente', 'pendiente']);
+	}
+
+	/**
+	 * Verificar si el pago es parcial
+	 */
+	public function esParcial(): bool
+	{
+		$estadoPago = $this->estadoPago;
+		return $estadoPago && in_array($estadoPago->nombre, ['PARCIAL', 'Parcial', 'parcial']);
+	}
+
+	/**
+	 * Scope para pagos completados
+	 */
+	public function scopeCompletados($query)
+	{
+		return $query->whereHas('estadoPago', function($q) {
+			$q->whereIn('nombre', ['COMPLETADO', 'Completado', 'completado']);
+		});
+	}
+
+	/**
+	 * Scope para pagos de una reserva específica
+	 */
+	public function scopeDeReserva($query, int $idReserva)
+	{
+		return $query->where('id_reserva', $idReserva);
+	}
+
+	/**
+	 * Obtener suma de pagos completados de una reserva
+	 */
+	public static function sumaPagosCompletados(int $idReserva): float
+	{
+		return self::deReserva($idReserva)
+			->completados()
+			->sum('monto_usd');
+	}
 }
