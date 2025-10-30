@@ -25,7 +25,8 @@ use App\Http\Controllers\Api\reserva\{
   ReservaController, ReservaHabitacionController, ReservaServicioController, ReservaPoliticaController, ServicioController, ReporteController
 };
 
-use App\Http\Controllers\Api\frontdesk\WalkInsController;
+
+use App\Http\Controllers\Api\frontdesk\WalkinController;
 use App\Http\Controllers\Api\frontdesk\ReservasCheckinController;
 use App\Http\Controllers\Api\frontdesk\EstadoEstadiaController;
 use App\Http\Controllers\Api\frontdesk\EstadiasController;
@@ -139,6 +140,8 @@ Route::post('reservas/{reserva}/cancelar',  [ReservaController::class, 'cancelar
 Route::post('reservas/{reserva}/cotizar',   [ReservaController::class, 'cotizar']);
 Route::post('reservas/{reserva}/no-show',   [ReservaController::class, 'noShow']);
 Route::post('reservas/{reserva}/checkin',   [ReservaController::class, 'generarEstadia']);
+Route::post('reservas/{reserva}/check-in',  [ReservaController::class, 'checkIn']);
+
 
 // Sistema de Pagos (Existentes)
 Route::post('reservas/{reserva}/pagos', [ReservaController::class, 'procesarPago']);
@@ -210,7 +213,9 @@ Check-out (crea evento)
 
 Route::prefix('frontdesk')->group(function () {
     // Walk-in
-    Route::post('/walkin', [WalkInsController::class, 'store']);
+    Route::post('/walkin', [WalkInController::class, 'store']);
+
+//Route::post('/frontdesk/walkin', [WalkinController::class, 'store']);
 
     // Check-in desde reserva
     Route::post('/reserva/{reserva}/checkin', [ReservasCheckinController::class, 'store']);
@@ -247,7 +252,7 @@ Route::prefix('frontdesk')->group(function () {
 
 Route::prefix('clientes')->group(function () {
     Route::get('/',            [ClienteController::class, 'index']);
-    //Route::post('/',           [ClienteController::class, 'store']);
+    Route::post('/',           [ClienteController::class, 'store']);
     Route::get('{cliente}',    [ClienteController::class, 'show']);
     Route::patch('{cliente}',    [ClienteController::class, 'update']);
     Route::delete('{cliente}', [ClienteController::class, 'destroy']);

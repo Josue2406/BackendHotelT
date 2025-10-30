@@ -1,22 +1,22 @@
 <?php
-// App/Http/Controllers/Api/frontdesk/WalkInsController.php
+// App/Http/Controllers/Api/frontdesk/WalkinController.php
 namespace App\Http\Controllers\Api\frontdesk;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\frontdesk\WalkinStoreRequest;
+use App\Http\Requests\frontdesk\StoreWalkInRequest;
 use Illuminate\Support\Facades\DB;
 use App\Models\cliente\Cliente;
-use App\Models\hotel\Habitacion;
+use App\Models\habitacion\Habitacione;
 use App\Models\estadia\Estadia;
 use App\Models\check_in\AsignacionHabitacion;
 use App\Models\check_in\CheckIn;
 
-class WalkInsController extends Controller
-{
+class WalkinController extends Controller
+{ 
     use \App\Http\Controllers\Api\frontdesk\Concerns\HabitacionAvailability;
 
     /** POST /frontdesk/walkin */
-    public function store(WalkinStoreRequest $req)
+    public function store(StoreWalkInRequest $req)
     {
         $data  = $req->validated();
 
@@ -31,7 +31,7 @@ class WalkInsController extends Controller
         }
 
         // 2) Validar que la habitación pertenezca al tipo elegido
-        $habitacion = Habitacion::findOrFail((int)$data['id_hab']);
+        $habitacion = Habitacione::findOrFail((int)$data['id_hab']);
         if ((int)$habitacion->id_tipo_hab !== (int)$data['id_tipo_hab']) {
             return response()->json(['message' => 'La habitación seleccionada no coincide con el tipo elegido.'], 422);
         }
