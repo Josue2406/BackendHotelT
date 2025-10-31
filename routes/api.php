@@ -141,6 +141,9 @@ Route::post('reservas/{reserva}/cotizar',   [ReservaController::class, 'cotizar'
 Route::post('reservas/{reserva}/no-show',   [ReservaController::class, 'noShow']);
 Route::post('reservas/{reserva}/checkin',   [ReservaController::class, 'generarEstadia']);
 Route::post('reservas/{reserva}/check-in',  [ReservaController::class, 'checkIn']);
+Route::put('reservas/{reserva}/estado',     [ReservaController::class, 'cambiarEstado']);
+Route::post('reservas/{reserva}/realizar-checkin',  [ReservaController::class, 'realizarCheckIn']);
+Route::post('reservas/{reserva}/realizar-checkout', [ReservaController::class, 'realizarCheckOut']);
 
 
 // Sistema de Pagos (Existentes)
