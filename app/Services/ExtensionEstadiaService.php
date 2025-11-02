@@ -125,20 +125,20 @@ class ExtensionEstadiaService
         $subtotalAdicional = $precioPorNoche * $nochesAdicionales;
 
         // Si hay cambio de habitación, puede haber un cargo adicional
-        $cargoC ambio = 0;
+        $cargoCambio = 0;
         if ($habitacionAlternativa && $habitacionAlternativa->id_habitacion != $reservaHab->id_habitacion) {
-            $cargoC ambio = 0; // Puedes configurar un cargo fijo por cambio si lo deseas
+            $cargoCambio = 0; // Puedes configurar un cargo fijo por cambio si lo deseas
         }
 
         return [
             'noches_adicionales' => $nochesAdicionales,
             'precio_por_noche' => $precioPorNoche,
             'subtotal_adicional' => $subtotalAdicional,
-            'cargo_cambio_habitacion' => $cargoC ambio,
-            'total_adicional' => $subtotalAdicional + $cargoC ambio,
+            'cargo_cambio_habitacion' => $cargoCambio,
+            'total_adicional' => $subtotalAdicional + $cargoCambio,
             'habitacion_utilizada' => [
-                'id' => $habitacion->id_habitacion,
-                'nombre' => $habitacion->nombre,
+            'id' => $habitacion->id_habitacion,
+            'nombre' => $habitacion->nombre,
             ],
         ];
     }
