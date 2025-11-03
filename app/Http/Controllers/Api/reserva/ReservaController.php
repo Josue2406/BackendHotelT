@@ -162,37 +162,38 @@ class ReservaController extends Controller
     $data = $r->validated();
 
     // 1) Determinar id_cliente según el contexto
-    // Intentar autenticar con el guard 'cliente' primero
-    $clienteAutenticado = auth('sanctum')->user();
+    $usuarioAutenticado = auth('sanctum')->user();
 
-    // Si no hay usuario autenticado con sanctum, intentar con el guard cliente
-    if (!$clienteAutenticado) {
-        $clienteAutenticado = auth()->guard('cliente')->user();
-    }
+    // Verificar si es un Cliente (modelo Cliente) o un Usuario administrativo
+    if ($usuarioAutenticado && get_class($usuarioAutenticado) === 'App\Models\cliente\Cliente') {
+        // CASO: Cliente autenticado (reserva desde web)
+        // Siempre usar el id_cliente del token (seguridad: no puede crear reservas para otros)
+        $data['id_cliente'] = $usuarioAutenticado->id_cliente;
 
-    if ($clienteAutenticado) {
-        // CASO WEB: Hay token autenticado (cliente)
-        // Siempre usar el cliente del token (seguridad: no puede crear reservas para otros)
-        $data['id_cliente'] = $clienteAutenticado->id_cliente;
-
-        Log::info('Reserva creada desde WEB (cliente autenticado)', [
+        Log::info('Reserva creada por cliente autenticado (WEB)', [
             'id_cliente' => $data['id_cliente'],
-            'email' => $clienteAutenticado->email ?? null,
-            'modelo' => get_class($clienteAutenticado)
+            'email' => $usuarioAutenticado->email ?? null
         ]);
-    } else {
-        // CASO RECEPCIÓN: No hay token
-        // Usar id_cliente del request (ya validado que existe por StoreReservaRequest)
+    } else if ($usuarioAutenticado) {
+        // CASO: Usuario administrativo autenticado (recepción, staff)
+        // Usar el id_cliente del request (debe venir en el request)
         if (!isset($data['id_cliente'])) {
             return response()->json([
                 'success' => false,
-                'message' => 'Se requiere id_cliente cuando no hay autenticación'
+                'message' => 'Se requiere id_cliente para crear reserva administrativa'
             ], 400);
         }
 
-        Log::info('Reserva creada desde RECEPCIÓN (sin autenticación)', [
+        Log::info('Reserva creada por usuario administrativo', [
+            'id_usuario' => $usuarioAutenticado->id ?? null,
             'id_cliente' => $data['id_cliente']
         ]);
+    } else {
+        // CASO: Sin autenticación (no debería llegar aquí por el middleware)
+        return response()->json([
+            'success' => false,
+            'message' => 'Se requiere autenticación'
+        ], 401);
     }
 
     // 2) Preparar datos de la reserva
