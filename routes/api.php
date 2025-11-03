@@ -294,25 +294,22 @@ Route::prefix('clientes/full')
 //Route::post('clientes/full', [ClienteFullController::class, 'store']);
 
 
-//-------------------------------------------FOLIO-------------------------------------------------
 use App\Http\Controllers\Api\folio\FolioResumenController;
-Route::get('/folios/{id}/resumen', [FolioResumenController::class, 'show']);
-
 use App\Http\Controllers\Api\folio\FolioDistribucionController;
-
-Route::post('/folios/{id}/distribuir', [FolioDistribucionController::class, 'distribuir']);
-
 use App\Http\Controllers\Api\folio\FolioPagosController;
-
-Route::post('/folios/{id}/pagos', [FolioPagosController::class, 'store']);
-
-use App\Http\Controllers\Api\folio\FolioCierreController;
-
-Route::post('/folios/{id}/cerrar', [FolioCierreController::class, 'cerrar']);
-
+use App\Http\Controllers\Api\folio\FolioCerrarController;
 use App\Http\Controllers\Api\folio\FolioHistorialController;
+use App\Http\Controllers\Api\folio\FolioHistorialExportController;
 
-Route::get('/folios/{id}/historial', [FolioHistorialController::class, 'index']);
+Route::prefix('folios')->group(function () {
+    Route::get('{idFolio}/resumen', [FolioResumenController::class, 'show']);
+    Route::post('{folioId}/distribuir', [FolioDistribucionController::class, 'distribuir']);
+    Route::post('{folioId}/pagos', [FolioPagosController::class, 'store']);
+    Route::post('{idFolio}/cerrar', [FolioCerrarController::class, 'store']);
+    Route::get('{idFolio}/historial', [FolioHistorialController::class, 'index']);
+    Route::get('{idFolio}/historial/export', [FolioHistorialExportController::class, 'exportCsv']);
+});
+
 //-------------------------------------------------------------------------------------------------
 
 use App\Http\Controllers\Api\frontdesk\ClientesLookupController;
