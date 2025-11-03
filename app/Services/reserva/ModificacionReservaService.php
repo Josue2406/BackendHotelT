@@ -4,7 +4,7 @@ namespace App\Services\reserva;
 
 use App\Models\reserva\Reserva;
 use App\Models\reserva\ReservaHabitacion;
-use App\Models\habitacion\Habitacion;
+use App\Models\habitacion\Habitacione;
 use App\Models\reserva\PoliticaCancelacion;
 use App\Services\ExchangeRateService;
 use Carbon\Carbon;
@@ -44,7 +44,7 @@ class ModificacionReservaService
             }
 
             $habitacionAntigua = $reservaHab->habitacion;
-            $habitacionNueva = Habitacion::findOrFail($idHabitacionNueva);
+            $habitacionNueva = Habitacione::findOrFail($idHabitacionNueva);
 
             // 2. Verificar disponibilidad de la nueva habitación
             $disponible = $this->verificarDisponibilidadHabitacion(
@@ -59,11 +59,12 @@ class ModificacionReservaService
 
             // 3. Calcular precios
             $precioAntiguo = $reservaHab->precio_total;
-            $precioNuevo = $this->pricingService->precioRango(
+            $precioRangoNuevo = $this->pricingService->precioRango(
                 $habitacionNueva,
                 Carbon::parse($reservaHab->fecha_llegada),
                 Carbon::parse($reservaHab->fecha_salida)
             );
+            $precioNuevo = $precioRangoNuevo['final_total'];
 
             $diferenciaPrecio = $precioNuevo - $precioAntiguo;
 
@@ -175,11 +176,12 @@ class ModificacionReservaService
 
             // Calcular precios con las nuevas fechas
             $precioAntiguo = $reservaHab->precio_total;
-            $precioNuevo = $this->pricingService->precioRango(
+            $precioRangoNuevo = $this->pricingService->precioRango(
                 $reservaHab->habitacion,
                 $fechaLlegadaNueva,
                 $fechaSalidaNueva
             );
+            $precioNuevo = $precioRangoNuevo['final_total'];
 
             $diferenciaPrecio = $precioNuevo - $precioAntiguo;
 
@@ -311,11 +313,12 @@ class ModificacionReservaService
 
             // Calcular precios
             $precioOriginal = $reservaHab->precio_total;
-            $precioNuevo = $this->pricingService->precioRango(
+            $precioRangoNuevo = $this->pricingService->precioRango(
                 $reservaHab->habitacion,
                 $fechaLlegada,
                 $nuevaFechaSalida
             );
+            $precioNuevo = $precioRangoNuevo['final_total'];
 
             $montoNochesCanceladas = $precioOriginal - $precioNuevo;
 
@@ -413,7 +416,7 @@ class ModificacionReservaService
      * Verificar disponibilidad de una habitación en un rango de fechas
      */
     private function verificarDisponibilidadHabitacion(
-        Habitacion $habitacion,
+        Habitacione $habitacion,
         Carbon $fechaInicio,
         Carbon $fechaFin,
         ?int $excluirReservaHabitacion = null

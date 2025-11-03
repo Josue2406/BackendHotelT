@@ -11,6 +11,8 @@ use App\Http\Requests\reserva\ExtenderEstadiaRequest;
 use App\Http\Requests\reserva\CambiarHabitacionRequest;
 use App\Http\Requests\reserva\ModificarFechasRequest;
 use App\Http\Requests\reserva\ReducirEstadiaRequest;
+use App\Http\Requests\reserva\CambiarEstadoReservaRequest;
+use App\Http\Requests\reserva\CheckInCheckOutRequest;
 use App\Models\reserva\Reserva;
 use App\Models\reserva\ReservaHabitacion;
 use App\Models\reserva\ReservaServicio;
@@ -298,6 +300,38 @@ class ReservaController extends Controller
         $reserva->update(['id_estado_res' => EstadoReserva::ESTADO_CONFIRMADA]);
         return $reserva->fresh(['habitaciones.habitacion.estado']);
     }
+
+public function checkIn($codigo)
+{
+    $reserva = Reserva::where('codigo', $codigo)->first();
+
+    if (!$reserva) {
+        return response()->json(['message' => 'Reserva no encontrada'], 404);
+    }
+
+    // Validar estado actual
+    if ($reserva->estado !== 'confirmada') {
+        return response()->json([
+            'message' => 'No se puede realizar el check-in porque la reserva no está confirmada.'
+        ], 400);
+    }
+
+    // Actualizar estado
+    $reserva->estado = 'check_in';
+    $reserva->fecha_check_in = now();
+    $reserva->save();
+
+    return response()->json([
+        'message' => 'Check-in realizado exitosamente.',
+        'reserva' => $reserva
+    ], 200);
+}
+
+
+
+
+
+
 
     public function cancelar(CancelReservaRequest $r, Reserva $reserva) {
         // 1) marcar estado cancelada - El Observer se encargará de liberar las habitaciones
@@ -1428,6 +1462,230 @@ class ReservaController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error al reducir la estadía',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Cambiar estado de la reserva (check-in, check-out, etc.)
+     * PUT /api/reservas/{reserva}/estado
+     *
+     * @param CambiarEstadoReservaRequest $request
+     * @param Reserva $reserva
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function cambiarEstado(CambiarEstadoReservaRequest $request, Reserva $reserva)
+    {
+        try {
+            $data = $request->validated();
+
+            // Guardar estado anterior para el log
+            $estadoAnterior = $reserva->estado->nombre ?? 'Desconocido';
+            $idEstadoAnterior = $reserva->id_estado_res;
+
+            return DB::transaction(function () use ($reserva, $data, $estadoAnterior, $idEstadoAnterior) {
+                // Actualizar el estado
+                $reserva->update([
+                    'id_estado_res' => $data['id_estado_res'],
+                ]);
+
+                // Si se proporcionaron notas, agregarlas
+                if (!empty($data['notas'])) {
+                    $notaActual = $reserva->notas ?? '';
+                    $timestamp = now()->format('Y-m-d H:i:s');
+                    $nuevaNota = "[{$timestamp}] Cambio de estado: {$estadoAnterior} → {$reserva->estado->nombre}. {$data['notas']}";
+
+                    $reserva->update([
+                        'notas' => $notaActual ? $notaActual . "\n\n" . $nuevaNota : $nuevaNota
+                    ]);
+                }
+
+                // Recargar con relaciones
+                $reserva->load(['cliente', 'estado', 'fuente', 'habitaciones.habitacion.estado']);
+
+                // Log del cambio
+                Log::info('Estado de reserva actualizado', [
+                    'id_reserva' => $reserva->id_reserva,
+                    'estado_anterior' => $estadoAnterior,
+                    'id_estado_anterior' => $idEstadoAnterior,
+                    'estado_nuevo' => $reserva->estado->nombre,
+                    'id_estado_nuevo' => $data['id_estado_res'],
+                    'notas' => $data['notas'] ?? null,
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => "Estado actualizado de '{$estadoAnterior}' a '{$reserva->estado->nombre}'",
+                    'data' => [
+                        'id_reserva' => $reserva->id_reserva,
+                        'estado_anterior' => [
+                            'id' => $idEstadoAnterior,
+                            'nombre' => $estadoAnterior
+                        ],
+                        'estado_actual' => [
+                            'id' => $reserva->id_estado_res,
+                            'nombre' => $reserva->estado->nombre ?? 'Desconocido'
+                        ],
+                        'fecha_cambio' => now()->format('Y-m-d H:i:s'),
+                        'reserva' => $reserva
+                    ]
+                ]);
+            });
+
+        } catch (\Exception $e) {
+            Log::error('Error al cambiar estado de reserva', [
+                'id_reserva' => $reserva->id_reserva,
+                'id_estado_solicitado' => $request->id_estado_res ?? null,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al cambiar el estado de la reserva',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Realizar check-in de una reserva
+     * POST /api/reservas/{reserva}/realizar-checkin
+     *
+     * @param CheckInCheckOutRequest $request
+     * @param Reserva $reserva
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function realizarCheckIn(CheckInCheckOutRequest $request, Reserva $reserva)
+    {
+        try {
+            $data = $request->validated();
+
+            return DB::transaction(function () use ($reserva, $data) {
+                // Guardar estado anterior
+                $estadoAnterior = $reserva->estado->nombre ?? 'Desconocido';
+
+                // Cambiar estado a Check-in (ID 4)
+                $reserva->update([
+                    'id_estado_res' => 4, // Check-in
+                ]);
+
+                // Agregar notas si se proporcionaron
+                if (!empty($data['notas'])) {
+                    $notaActual = $reserva->notas ?? '';
+                    $timestamp = now()->format('Y-m-d H:i:s');
+                    $nuevaNota = "[{$timestamp}] Check-in realizado. {$data['notas']}";
+
+                    $reserva->update([
+                        'notas' => $notaActual ? $notaActual . "\n\n" . $nuevaNota : $nuevaNota
+                    ]);
+                }
+
+                // Recargar con relaciones
+                $reserva->load(['cliente', 'estado', 'fuente', 'habitaciones.habitacion.estado']);
+
+                // Log del cambio
+                Log::info('Check-in realizado', [
+                    'id_reserva' => $reserva->id_reserva,
+                    'estado_anterior' => $estadoAnterior,
+                    'notas' => $data['notas'] ?? null,
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Check-in realizado exitosamente',
+                    'data' => [
+                        'id_reserva' => $reserva->id_reserva,
+                        'estado_anterior' => $estadoAnterior,
+                        'estado_actual' => 'Check-in',
+                        'fecha_checkin' => now()->format('Y-m-d H:i:s'),
+                        'reserva' => $reserva
+                    ]
+                ]);
+            });
+
+        } catch (\Exception $e) {
+            Log::error('Error al realizar check-in', [
+                'id_reserva' => $reserva->id_reserva,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al realizar check-in',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Realizar check-out de una reserva
+     * POST /api/reservas/{reserva}/realizar-checkout
+     *
+     * @param CheckInCheckOutRequest $request
+     * @param Reserva $reserva
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function realizarCheckOut(CheckInCheckOutRequest $request, Reserva $reserva)
+    {
+        try {
+            $data = $request->validated();
+
+            return DB::transaction(function () use ($reserva, $data) {
+                // Guardar estado anterior
+                $estadoAnterior = $reserva->estado->nombre ?? 'Desconocido';
+
+                // Cambiar estado a Check-out (ID 5)
+                $reserva->update([
+                    'id_estado_res' => 5, // Check-out
+                ]);
+
+                // Agregar notas si se proporcionaron
+                if (!empty($data['notas'])) {
+                    $notaActual = $reserva->notas ?? '';
+                    $timestamp = now()->format('Y-m-d H:i:s');
+                    $nuevaNota = "[{$timestamp}] Check-out realizado. {$data['notas']}";
+
+                    $reserva->update([
+                        'notas' => $notaActual ? $notaActual . "\n\n" . $nuevaNota : $nuevaNota
+                    ]);
+                }
+
+                // Recargar con relaciones
+                $reserva->load(['cliente', 'estado', 'fuente', 'habitaciones.habitacion.estado']);
+
+                // Log del cambio
+                Log::info('Check-out realizado', [
+                    'id_reserva' => $reserva->id_reserva,
+                    'estado_anterior' => $estadoAnterior,
+                    'notas' => $data['notas'] ?? null,
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Check-out realizado exitosamente',
+                    'data' => [
+                        'id_reserva' => $reserva->id_reserva,
+                        'estado_anterior' => $estadoAnterior,
+                        'estado_actual' => 'Check-out',
+                        'fecha_checkout' => now()->format('Y-m-d H:i:s'),
+                        'reserva' => $reserva
+                    ]
+                ]);
+            });
+
+        } catch (\Exception $e) {
+            Log::error('Error al realizar check-out', [
+                'id_reserva' => $reserva->id_reserva,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al realizar check-out',
                 'error' => $e->getMessage()
             ], 500);
         }
