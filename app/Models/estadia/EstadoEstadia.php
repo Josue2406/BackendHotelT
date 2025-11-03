@@ -30,7 +30,10 @@ class EstadoEstadia extends Model
 		'codigo',
 		'nombre'
 	];
-
+ // 🔹 NUEVAS CONSTANTES
+    public const ACTIVA = 1;
+    public const TERMINADA = 2;
+    public const CANCELADA = 3;
 	public function estadia_where_id_estado_estadium()
 	{
 		return $this->hasMany(Estadia::class, 'id_estado_estadia');
