@@ -8,114 +8,135 @@ use Illuminate\Support\Facades\DB;
 
 class FolioHistorialController extends Controller
 {
-    /**
-     * GET /api/folios/{id}/historial
-     * Query params opcionales:
-     *  - page (int)      : página (default 1)
-     *  - per_page (int)  : items por página (default 50, máx 200)
-     *  - tipo (string)   : filtro por tipo ('distribucion'|'pago'|'cierre')
-     */
-    public function index(Request $req, int $folioId)
+    public function index(Request $req, int $idFolio)
     {
-        // (Opcional) validar existencia del folio con la vista
-        $exists = DB::table('vw_folio_resumen')->where('id_folio', $folioId)->exists();
+        $tipoFiltro = $req->query('tipo'); // pago, distribucion, linea, cierre, etc.
+        $from = $req->query('from');
+        $to = $req->query('to');
+        $page = max(1, (int) $req->query('page', 1));
+        $perPage = min(100, (int) $req->query('per_page', 50));
+        $offset = ($page - 1) * $perPage;
+
+        // ===============================
+        // 1️⃣ Validar que el folio exista
+        // ===============================
+        $exists = DB::table('folio')->where('id_folio', $idFolio)->exists();
         if (!$exists) {
             return response()->json(['message' => 'Folio no encontrado'], 404);
         }
 
-        $tipo = $req->query('tipo');
-        $page = max(1, (int)$req->query('page', 1));
-        $perPage = min(200, max(1, (int)$req->query('per_page', 50)));
+        // =====================================
+        // 2️⃣ Construir subconsultas dinámicas
+        // =====================================
+        $applyDateFilter = function ($query) use ($from, $to) {
+            if ($from) $query->whereDate('created_at', '>=', $from);
+            if ($to) $query->whereDate('created_at', '<=', $to);
+        };
 
-        $q = DB::table('folio_operacion')
-            ->where('id_folio', $folioId)
-            ->when($tipo, fn($qq) => $qq->where('tipo', $tipo))
-            ->orderByDesc('created_at');
+        // 🔹 folio_operacion
+        $qOper = DB::table('folio_operacion')
+            ->selectRaw("
+                id_folio,
+                operacion_uid,
+                tipo,
+                total,
+                payload,
+                summary,
+                created_at,
+                'operacion' as fuente
+            ")
+            ->where('id_folio', $idFolio);
 
-        $total = (clone $q)->count();
-        $items = $q->forPage($page, $perPage)->get();
+        if ($tipoFiltro) $qOper->where('tipo', $tipoFiltro);
+        $applyDateFilter($qOper);
 
-        // Enriquecer cada ítem con resumen legible
-        $events = $items->map(function ($row) {
-            $payload = $this->safeJsonDecode($row->payload);
-            $summary = $this->buildSummary($row->tipo, $row->total, $payload);
+        // 🔹 folio_linea
+        $qLinea = DB::table('folio_linea')
+            ->selectRaw("
+                id_folio,
+                NULL as operacion_uid,
+                'linea' as tipo,
+                monto as total,
+                JSON_OBJECT('id_cliente', id_cliente, 'descripcion', descripcion) as payload,
+                descripcion as summary,
+                created_at,
+                'linea' as fuente
+            ")
+            ->where('id_folio', $idFolio);
+        $applyDateFilter($qLinea);
 
+        // 🔹 folio_historial
+        $qHist = DB::table('folio_historial')
+            ->selectRaw("
+                id_folio,
+                operacion_uid,
+                tipo,
+                total,
+                payload,
+                summary,
+                created_at,
+                'historial' as fuente
+            ")
+            ->where('id_folio', $idFolio);
+        $applyDateFilter($qHist);
+
+        // =====================================
+        // 3️⃣ Unificar con unionAll y ordenar
+        // =====================================
+        $union = $qOper->unionAll($qLinea)->unionAll($qHist);
+
+        $eventos = DB::query()
+            ->fromSub($union, 'u')
+            ->orderByDesc('created_at')
+            ->offset($offset)
+            ->limit($perPage)
+            ->get();
+
+        $total = DB::query()
+            ->fromSub($union, 'c')
+            ->count();
+
+        // =====================================
+        // 4️⃣ Formatear respuesta
+        // =====================================
+        $eventos = $eventos->map(function ($e) {
             return [
-                'id'            => (int)$row->id,
-                'operacion_uid' => $row->operacion_uid,
-                'tipo'          => $row->tipo,            // 'distribucion' | 'pago' | 'cierre'
-                'total'         => $this->toDecimal($row->total),
-                'payload'       => $payload,              // datos crudos guardados en la operación
-                'summary'       => $summary,              // texto breve para UI
-                'created_at'    => $row->created_at,
+                'tipo'        => $e->tipo,
+                'summary'     => $e->summary ?? '',
+                'total'       => $e->total ? round((float)$e->total, 2) : 0,
+                'payload'     => $this->parsePayload($e->payload),
+                'fuente'      => $e->fuente,
+                'created_at'  => $e->created_at,
+                'operacion_uid' => $e->operacion_uid,
             ];
         });
 
         return response()->json([
-            'folio'     => $folioId,
-            'filters'   => ['tipo' => $tipo, 'page' => $page, 'per_page' => $perPage],
-            'pagination'=> [
-                'total' => $total,
-                'page'  => $page,
+            'folio' => $idFolio,
+            'filters' => [
+                'tipo' => $tipoFiltro,
+                'from' => $from,
+                'to' => $to,
+                'page' => $page,
                 'per_page' => $perPage,
-                'has_more' => $page * $perPage < $total,
             ],
-            'events'    => $events,
+            'pagination' => [
+                'total' => $total,
+                'page' => $page,
+                'per_page' => $perPage,
+                'has_more' => ($offset + $perPage) < $total,
+            ],
+            'events' => $eventos,
         ]);
     }
 
-    private function safeJsonDecode(?string $json): array
+    private function parsePayload($payload)
     {
-        if (!$json) return [];
-        $data = json_decode($json, true);
-        return is_array($data) ? $data : [];
-    }
-
-    private function toDecimal($num): string
-    {
-        return number_format((float)$num, 2, '.', '');
-    }
-
-    private function buildSummary(string $tipo, $total, array $payload): string
-    {
-        $totalFmt = $this->toDecimal($total);
-
-        switch ($tipo) {
-            case 'pago':
-                // Deudor (a quién se aplica el pago) y pagador (quién paga) desde payload
-                $deudor   = $payload['id_cliente'] ?? null;
-                $pTipo    = $payload['pagador_tipo'] ?? null;
-                $pCli     = $payload['id_pagador_cliente'] ?? null;
-                $pEmp     = $payload['id_pagador_empresa'] ?? null;
-
-                if ($deudor !== null) {
-                    if ($pTipo === 'empresa' && $pEmp) {
-                        return "Pago $totalFmt aplicado a cliente {$deudor} (pagó empresa {$pEmp})";
-                    } elseif ($pTipo === 'cliente' && $pCli) {
-                        return "Pago $totalFmt aplicado a cliente {$deudor} (pagó cliente {$pCli})";
-                    }
-                    return "Pago $totalFmt aplicado a cliente {$deudor}";
-                }
-                return "Pago general $totalFmt";
-
-            case 'distribucion':
-                $asigs = $payload['asignaciones'] ?? [];
-                $n = count($asigs);
-                $det = $n ? (" → " . implode(', ',
-                    array_map(fn($a) =>
-                        (isset($a['id_cliente']) ? $a['id_cliente'] : '?')
-                        . ':' .
-                        (isset($a['monto']) ? $this->toDecimal($a['monto']) : '0.00')
-                    , $asigs)
-                )) : '';
-                return "Distribución $totalFmt entre {$n} persona(s)$det";
-
-            case 'cierre':
-                $tit = $payload['titular'] ?? null;
-                return "Cierre: traslado total $totalFmt al titular " . ($tit ?? '?');
-
-            default:
-                return ucfirst($tipo) . " $totalFmt";
+        if (empty($payload)) return null;
+        try {
+            return json_decode($payload, true, 512, JSON_THROW_ON_ERROR);
+        } catch (\Throwable $e) {
+            return $payload;
         }
     }
 }

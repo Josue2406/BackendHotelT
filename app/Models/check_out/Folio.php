@@ -1,78 +1,79 @@
 <?php
 
-/**
- * Created by Reliese Model.
- */
-
 namespace App\Models\check_out;
 
-use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Carbon\Carbon;
 
-/**
- * Class Folio
- * 
- * @property int $id_folio
- * @property int|null $id_reserva_hab
- * @property int|null $id_estadia
- * @property int $id_estado_folio
- * @property float $total
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
- * 
- * @property Collection|Factura[] $facturas_where_id_folio
- * @property Collection|NuevaEntradaFolio[] $nueva_entrada_folios_where_id_folio
- * @property Collection|TransaccionPago[] $transaccion_pagos_where_id_folio
- *
- * @package App\Models
- */
+use App\Models\estadia\Estadia;
+use App\Models\reserva\ReservaHabitacion;
+use App\Models\factura\Factura;
+use App\Models\check_out\NuevaEntradaFolio;
+use App\Models\catalogo_pago\TransaccionPago;
+
 class Folio extends Model
 {
-	protected $table = 'folio';
-	protected $primaryKey = 'id_folio';
+    protected $table = 'folio';
+    protected $primaryKey = 'id_folio';
+    public $timestamps = true;
 
-	protected $casts = [
-		'id_reserva_hab' => 'int',
-		'id_estadia' => 'int',
-		'id_estado_folio' => 'int',
-		'total' => 'float'
-	];
+    protected $casts = [
+        'id_reserva_hab' => 'int',
+        'id_estadia' => 'int',
+        'id_estado_folio' => 'int',
+        'total' => 'float',
+    ];
 
-	protected $fillable = [
-		'id_reserva_hab',
-		'id_estadia',
-		'id_estado_folio',
-		'total'
-	];
+    protected $fillable = [
+        'id_reserva_hab',
+        'id_estadia',
+        'id_estado_folio',
+        'total',
+    ];
 
-	public function id_estadia()
-	{
-		return $this->belongsTo(Estadium::class, 'id_estadia');
-	}
+    // ============================
+    // 🔹 Relaciones
+    // ============================
 
-	public function id_estado_folio()
-	{
-		return $this->belongsTo(EstadoFolio::class, 'id_estado_folio');
-	}
+    public function estadia(): BelongsTo
+    {
+        return $this->belongsTo(Estadia::class, 'id_estadia');
+    }
 
-	public function id_reserva_hab()
-	{
-		return $this->belongsTo(ReservaHabitacion::class, 'id_reserva_hab');
-	}
+    public function estadoFolio(): BelongsTo
+    {
+        return $this->belongsTo(EstadoFolio::class, 'id_estado_folio');
+    }
 
-	public function facturas_where_id_folio()
-	{
-		return $this->hasMany(Factura::class, 'id_folio');
-	}
+    public function reservaHabitacion(): BelongsTo
+    {
+        return $this->belongsTo(ReservaHabitacion::class, 'id_reserva_hab');
+    }
 
-	public function nueva_entrada_folios_where_id_folio()
-	{
-		return $this->hasMany(NuevaEntradaFolio::class, 'id_folio');
-	}
+    public function facturas(): HasMany
+    {
+        return $this->hasMany(Factura::class, 'id_folio');
+    }
 
-	public function transaccion_pagos_where_id_folio()
-	{
-		return $this->hasMany(TransaccionPago::class, 'id_folio');
-	}
+    public function nuevasEntradas(): HasMany
+    {
+        return $this->hasMany(NuevaEntradaFolio::class, 'id_folio');
+    }
+
+    public function transacciones(): HasMany
+    {
+        return $this->hasMany(TransaccionPago::class, 'id_folio');
+    }
+
+    // ============================
+    // 🔹 Accesor para mostrar nombre del estado directamente
+    // ============================
+    protected $appends = ['estado_nombre'];
+
+    public function getEstadoNombreAttribute(): ?string
+    {
+        return $this->estadoFolio ? $this->estadoFolio->nombre : null;
+    }
 }
