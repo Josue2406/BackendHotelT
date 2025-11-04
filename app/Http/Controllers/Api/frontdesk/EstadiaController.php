@@ -3,56 +3,91 @@
 namespace App\Http\Controllers\Api\frontdesk;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\estadia\Estadia;
+use App\Models\check_in\AsignacionHabitacion;
+use App\Models\check_out\Folio;
+use App\Models\estadia\EstadiaCliente;
+use App\Models\cliente\Cliente;
 use Illuminate\Support\Facades\DB;
 
 class EstadiaController extends Controller
 {
-    public function show(int $id)
+    /**
+     * GET /api/frontdesk/estadia/{id}
+     * 
+     * Devuelve detalle completo de la estadía,
+     * igual al formato del Check-in.
+     */
+    public function show($id)
     {
-        // Buscar la estadía junto con sus relaciones
         $estadia = Estadia::with([
-            'estado',
-            'reserva:id_reserva,codigo_reserva,id_cliente,id_fuente,id_estado_res',
-            'clientes:id_cliente,nombre,apellido1,apellido2,email',
+            'estado:id_estado_estadia,nombre,codigo',
+            'clienteTitular:id_cliente,nombre,apellido1,apellido2,email,telefono',
         ])->find($id);
 
         if (!$estadia) {
-            return response()->json(['message' => 'Estadía no encontrada'], 404);
+            return response()->json([
+                'message' => "Estadía no encontrada con ID $id."
+            ], 404);
         }
 
-        // Buscar folio asociado
-        $folio = DB::table('folio')
-            ->select('id_folio', 'id_estado_folio', 'total')
-            ->where('id_estadia', $estadia->id_estadia)
+        // 🔹 Obtener acompañantes
+        $acompanantes = EstadiaCliente::where('id_estadia', $estadia->id_estadia)
+            ->where('rol', 'ACOMPANANTE')
+            ->with('cliente:id_cliente,nombre,apellido1,email')
+            ->get()
+            ->map(function ($a) {
+                return [
+                    'id_cliente' => $a->cliente->id_cliente,
+                    'nombre' => $a->cliente->nombre,
+                    'apellido1' => $a->cliente->apellido1,
+                    'email' => $a->cliente->email,
+                    'folio_asociado' => null,
+                ];
+            });
+
+        // 🔹 Obtener última asignación
+        $asignacion = AsignacionHabitacion::where('id_estadia', $estadia->id_estadia)
+            ->latest('fecha_asignacion')
             ->first();
 
-        if ($folio) {
-            $folio->estado_folio = DB::table('estado_folio')
-                ->where('id_estado_folio', $folio->id_estado_folio)
-                ->value('nombre');
-        }
-
-        // Acompañantes (excluye al titular)
-        $acompanantes = DB::table('estadia_clientes as ec')
-            ->join('clientes as c', 'c.id_cliente', '=', 'ec.id_cliente')
-            ->where('ec.id_estadia', $estadia->id_estadia)
-            ->where('ec.rol', '!=', 'TITULAR')
-            ->select('c.id_cliente', 'c.nombre', 'c.apellido1', 'c.email', 'ec.rol')
-            ->get();
-
-        // Titular
-        $titular = DB::table('clientes')
-            ->where('id_cliente', $estadia->id_cliente_titular)
-            ->select('id_cliente', 'nombre', 'apellido1', 'email')
-            ->first();
+        // 🔹 Obtener folio
+        $folio = Folio::where('id_estadia', $estadia->id_estadia)->first();
 
         return response()->json([
-            'estadia' => $estadia,
-            'titular' => $titular,
+            'message' => 'Detalle de estadía obtenido correctamente.',
+            'estadia' => [
+                'id_estadia' => $estadia->id_estadia,
+                'id_reserva' => $estadia->id_reserva,
+                'id_cliente_titular' => $estadia->id_cliente_titular,
+                'id_fuente' => $estadia->id_fuente,
+                'fecha_llegada' => $estadia->fecha_llegada,
+                'fecha_salida' => $estadia->fecha_salida,
+                'adultos' => $estadia->adultos,
+                'ninos' => $estadia->ninos,
+                'bebes' => $estadia->bebes,
+                'id_estado_estadia' => $estadia->id_estado_estadia,
+                'created_at' => $estadia->created_at,
+                'updated_at' => $estadia->updated_at,
+                'estado' => $estadia->estado,
+            ],
             'acompanantes' => $acompanantes,
-            'folio' => $folio,
+            'asignacion' => $asignacion ? [
+                'id_asignacion' => $asignacion->id_asignacion,
+                'id_hab' => $asignacion->id_habitacion ?? $asignacion->id_hab, // tolera ambos nombres
+                'id_reserva' => $asignacion->id_reserva,
+                'id_estadia' => $asignacion->id_estadia,
+                'origen' => $asignacion->origen,
+                'nombre' => $asignacion->nombre,
+                'fecha_asignacion' => $asignacion->fecha_asignacion,
+                'adultos' => $asignacion->adultos,
+                'ninos' => $asignacion->ninos,
+                'bebes' => $asignacion->bebes,
+                'created_at' => $asignacion->created_at,
+                'updated_at' => $asignacion->updated_at,
+            ] : null,
+            'folio' => $folio?->id_folio,
+            'checkin_at' => optional($asignacion)->created_at ? $asignacion->created_at->format('Y-m-d H:i:s') : null,
         ]);
     }
 }
