@@ -76,4 +76,9 @@ class Folio extends Model
     {
         return $this->estadoFolio ? $this->estadoFolio->nombre : null;
     }
+    public function estado()
+{
+    return $this->belongsTo(\App\Models\check_out\EstadoFolio::class, 'id_estado_folio', 'id_estado_folio');
+}
+
 }

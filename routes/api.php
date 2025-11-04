@@ -247,7 +247,7 @@ Route::prefix('frontdesk')->group(function () {
   Route::post('/estadia/{estadia}/room-move', [EstadiasController::class, 'roomMove']);
   Route::patch('/estadia/{estadia}/fechas',    [EstadiasController::class, 'updateFechas']);
   Route::post('/estadia/{estadia}/checkout',  [EstadiasController::class, 'checkout']);
-  Route::get('/estadia/{estadia}',            [EstadiasController::class, 'show']);
+  //Route::get('/estadia/{estadia}',            [EstadiasController::class, 'show']);
   Route::get('/estadias',                     [EstadiasController::class, 'index']);
 });
 
@@ -308,6 +308,11 @@ Route::prefix('folios')->group(function () {
     Route::get('{idFolio}/historial', [FolioHistorialController::class, 'index']);
     Route::get('{idFolio}/historial/export', [FolioHistorialExportController::class, 'exportCsv']);
 });
+
+use App\Http\Controllers\Api\frontdesk\EstadiaController;
+
+Route::get('/frontdesk/estadia/{id}', [EstadiaController::class, 'show']);
+
 
 //-------------------------------------------------------------------------------------------------
 
