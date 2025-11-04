@@ -258,6 +258,9 @@ Route::get('/frontdesk/estadia/{id}', [EstadiaController::class, 'show']);
 
 
 Route::prefix('frontdesk')->group(function () {
+
+
+      Route::get('/estadia/by-reserva/{codigo}', [\App\Http\Controllers\Api\frontdesk\EstadiaController::class, 'showByReserva']);
     // Walk-in
     Route::post('/walkin', [WalkInController::class, 'store']);
 
