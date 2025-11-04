@@ -150,7 +150,7 @@ class AsignacionHabitacion extends Model
 
     public function habitacion(): BelongsTo
     {
-        return $this->belongsTo(Habitacione::class, 'id_hab', 'id_habitacion');
+        return $this->belongsTo(Habitacione::class, 'id_habitacion', 'id_habitacion');
     }
 
     public function reserva(): BelongsTo

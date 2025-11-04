@@ -44,7 +44,8 @@ class EstadiaCliente extends Model
     }
 
     public function cliente()
-    {
-        return $this->belongsTo(Cliente::class, 'id_cliente', 'id_cliente');
-    }
+{
+    return $this->belongsTo(\App\Models\cliente\Cliente::class, 'id_cliente', 'id_cliente');
+}
+
 }
