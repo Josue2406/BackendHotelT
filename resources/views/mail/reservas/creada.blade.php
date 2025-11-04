@@ -10,7 +10,7 @@ A continuación te dejamos un resumen de los detalles:
 - **Estado:** {{ $reserva->estado?->nombre ?? 'Pendiente' }}
 - **Fuente:** {{ $reserva->fuente?->nombre ?? 'N/D' }}
 - **Fecha de creación:** {{ $reserva->fecha_creacion?->format('d/m/Y H:i') ?? now()->format('d/m/Y H:i') }}
-- **Total:** ₡{{ number_format($reserva->total_monto_reserva, 2) }}
+- **Total:** ${{ number_format($reserva->total_monto_reserva, 2) }}
 - **Numero de reserva:** {{ $reserva->id_reserva }}
 
 ---
@@ -22,7 +22,7 @@ A continuación te dejamos un resumen de los detalles:
   Del **{{ \Illuminate\Support\Carbon::parse($h->fecha_llegada)->format('d/m/Y') }}**
   al **{{ \Illuminate\Support\Carbon::parse($h->fecha_salida)->format('d/m/Y') }}**  
   Adultos: {{ $h->adultos }}, Niños: {{ $h->ninos }}, Bebés: {{ $h->bebes }}  
-  Subtotal: ₡{{ number_format($h->subtotal, 2) }}
+  Subtotal: ${{ number_format($h->subtotal, 2) }}
 
 @endforeach
 </x-mail::panel>

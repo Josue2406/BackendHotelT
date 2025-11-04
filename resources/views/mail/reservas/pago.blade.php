@@ -28,9 +28,9 @@ Hemos registrado un pago para tu **reserva #{{ $reserva->id_reserva }}**. Te com
 ---
 
 ### 🧾 Estado de tu reserva
-- **Total de la reserva**: ₡{{ number_format($payload['reserva']['total_monto_reserva'] ?? 0, 2) }}
-- **Monto pagado**: ₡{{ number_format($payload['reserva']['monto_pagado'] ?? 0, 2) }}
-- **Monto pendiente**: ₡{{ number_format($payload['reserva']['monto_pendiente'] ?? 0, 2) }}
+- **Total de la reserva**: ${{ number_format($payload['reserva']['total_monto_reserva'] ?? 0, 2) }}
+- **Monto pagado**: ${{ number_format($payload['reserva']['monto_pagado'] ?? 0, 2) }}
+- **Monto pendiente**: ${{ number_format($payload['reserva']['monto_pendiente'] ?? 0, 2) }}
 - **Porcentaje pagado**: {{ $payload['reserva']['porcentaje_pagado'] ?? 0 }}%
 
 @isset($payload['hitos'])

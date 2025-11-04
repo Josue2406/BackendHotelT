@@ -10,7 +10,7 @@ hemos procesado la **cancelación** de tu reserva. A continuación te dejamos el
 ### 🏨 Detalles de la reserva
 - **Estado:** {{ $reserva->estado?->nombre ?? 'Cancelada' }}
 - **Fecha de cancelación:** {{ \Illuminate\Support\Carbon::now()->format('d/m/Y H:i') }}
-- **Total original:** ₡{{ number_format($reserva->getOriginal('total_monto_reserva') ?? $reserva->total_monto_reserva, 2) }}
+- **Total original:** ${{ number_format($reserva->getOriginal('total_monto_reserva') ?? $reserva->total_monto_reserva, 2) }}
 
 @if(!empty($reserva->habitaciones) && $reserva->habitaciones->count())
 ---
@@ -39,9 +39,9 @@ hemos procesado la **cancelación** de tu reserva. A continuación te dejamos el
 
 ---
 ### 💳 Resumen de montos
-- **Monto pagado:** ₡{{ number_format($payload['monto_pagado'] ?? 0, 2) }}
-- **Reembolso:** ₡{{ number_format($payload['reembolso'] ?? 0, 2) }}
-- **Penalidad:** ₡{{ number_format($payload['penalidad'] ?? 0, 2) }}
+- **Monto pagado:** ${{ number_format($payload['monto_pagado'] ?? 0, 2) }}
+- **Reembolso:** ${{ number_format($payload['reembolso'] ?? 0, 2) }}
+- **Penalidad:** ${{ number_format($payload['penalidad'] ?? 0, 2) }}
 @if(isset($payload['porcentaje_reembolso']))
 - **% de reembolso sobre lo pagado:** {{ $payload['porcentaje_reembolso'] }}%
 @endif
