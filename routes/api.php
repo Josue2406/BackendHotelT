@@ -48,8 +48,8 @@ use App\Http\Controllers\Api\Huespedes\HuespedController;   // ← IMPORTANTE
 
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/register', [AuthController::class, 'register']);
-Route::post('/forgot-password', [ForgotPasswordController::class, 'sendCode']);
-Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword']);
+Route::post('/auth/forgot-password', [ForgotPasswordController::class, 'sendCode']);
+Route::post('/auth/reset-password', [ForgotPasswordController::class, 'resetPassword']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/auth/me', [AuthController::class, 'me']);

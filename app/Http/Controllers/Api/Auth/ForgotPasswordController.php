@@ -29,7 +29,7 @@ class ForgotPasswordController extends Controller
         );
 
         // Enviar correo
-        Mail::send('emails.reset-code', ['code' => $code, 'user' => $user], function ($message) use ($user) {
+        Mail::send('mail.forgotPass.reset-code', ['code' => $code, 'user' => $user], function ($message) use ($user) {
             $message->to($user->email)
                     ->subject('Código para restablecer tu contraseña');
         });
