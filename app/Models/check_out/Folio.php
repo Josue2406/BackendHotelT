@@ -76,4 +76,26 @@ class Folio extends Model
     {
         return $this->estadoFolio ? $this->estadoFolio->nombre : null;
     }
+    public function id_estado_folio()
+{
+    return $this->belongsTo(\App\Models\check_out\EstadoFolio::class, 'id_estado_folio', 'id_estado_folio');
+}
+
+
+
+public function lineas()
+{
+    return $this->hasMany(\App\Models\check_out\FolioLinea::class, 'id_folio', 'id_folio');
+}
+
+public function pagos()
+{
+    return $this->hasMany(\App\Models\catalogo_pago\TransaccionPago::class, 'id_folio', 'id_folio');
+}
+
+public function estado()
+{
+    return $this->belongsTo(\App\Models\check_out\EstadoFolio::class, 'id_estado_folio', 'id_estado_folio');
+}
+
 }

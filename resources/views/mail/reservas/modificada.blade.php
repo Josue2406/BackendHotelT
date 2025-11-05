@@ -1,7 +1,7 @@
 <x-mail::message>
 @php
     // Helpers de formato
-    $money = fn($n) => '₡' . number_format((float)$n, 2);
+    $money = fn($n) => '$' . number_format((float)$n, 2);
 
     // Atajos del payload
     $p = $payload; 
