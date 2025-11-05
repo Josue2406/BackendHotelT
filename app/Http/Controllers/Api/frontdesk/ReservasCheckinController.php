@@ -35,11 +35,11 @@ class ReservasCheckinController extends Controller
         // 0️⃣ Validar estado de la reserva
         
         if ($reserva->id_estado_res !== EstadoReserva::ESTADO_CONFIRMADA) {
-    return response()->json([
+      return response()->json([
         'message' => "Solo las reservas con estado 'Confirmada' pueden realizar el check-in.",
         'estado_actual' => EstadoReserva::getNombreEstado($reserva->id_estado_res),
-    ], 422);
-}
+       ], 422);
+        }
 
 
         // ============================
@@ -122,7 +122,7 @@ class ReservasCheckinController extends Controller
     'adultos'          => $data['adultos'] ?? 1,
     'ninos'            => $data['ninos'] ?? 0,
     'bebes'            => $data['bebes'] ?? 0, // ✅ evita null
-]);
+         ]);
 
 
             // 6️⃣ Registrar Check-in
@@ -130,73 +130,153 @@ class ReservasCheckinController extends Controller
                 'id_asignacion' => $asign->id_asignacion,
                 'fecha_hora'    => now(),
                 'observacion'   => $data['observacion_checkin'] ?? null,
-            ]);
+              ]);
 
-
+            // ================================================
+            // 7️⃣ Crear Folio asociado
+            // ================================================
             $idReservaHab = DB::table('reserva_habitacions')
     ->where('id_reserva', $reserva->id_reserva)
     ->value('id_reserva_hab');
-            // 7️⃣ Crear Folio asociado
-            $folio = Folio::firstOrCreate(
-                [
-                    'id_estadia'      => $estadia->id_estadia,
-                    'id_reserva_hab'  => $reserva->id_reserva ?? null
-                ],
-                [
-                    'id_estado_folio' => EstadoFolio::ABIERTO,
-                    'total'           => 0.0,
-                    'id_reserva_hab'  => $idReservaHab/* ?? null*/,
-                ]
-            );
 
-            // 8️⃣ Aplicar distribución automática de cargos
-            $pagoModo = $data['pago_modo'] ?? 'general'; // 'general' o 'por_persona'
+$folio = Folio::firstOrCreate(
+    [
+        'id_estadia'     => $estadia->id_estadia,
+        'id_reserva_hab' => $idReservaHab
+    ],
+    [
+        'id_estado_folio' => EstadoFolio::ABIERTO,
+        'total'           => 0.0,
+        'created_at'      => now(),
+        'updated_at'      => now(),
+    ]
+);
 
-            if ($pagoModo === 'por_persona' && !empty($acompanantesCreados)) {
-                $resumen = DB::table('vw_folio_resumen')->where('id_folio', $folio->id_folio)->first();
+// ================================================
+// 8️⃣ Registrar crédito inicial o depósito de respaldo
+// ================================================
+$creditoInicial = $data['credito_inicial'] ?? 0.0; // opcional desde el frontend
+$metodoPago     = $data['metodo_pago'] ?? 'Tarjeta'; // opcional (Tarjeta / Efectivo / Transferencia)
 
-                if ($resumen && (float)$resumen->cargos_sin_persona > 0) {
-                    $clientes = collect($acompanantesCreados)
-                        ->pluck('id_cliente')
-                        ->prepend($data['id_cliente_titular'])
-                        ->map(fn($id) => ['id_cliente' => $id])
-                        ->values()
-                        ->toArray();
+if ($creditoInicial > 0) {
+    // Insertar movimiento en folio_linea (saldo inicial)
+    DB::table('folio_linea')->insert([
+        'id_folio'    => $folio->id_folio,
+        'id_cliente'  => $data['id_cliente_titular'],
+        'descripcion' => 'Crédito inicial o depósito de respaldo',
+        'monto'       => $creditoInicial,
+        'created_at'  => now(),
+        'updated_at'  => now(),
+    ]);
 
-                    $distribucionRequest = new \Illuminate\Http\Request([
-                        'operacion_uid' => 'auto-dist-' . uniqid(),
-                        'strategy'      => 'equal',
-                        'responsables'  => $clientes
-                    ]);
+    // Registrar operación contable (folio_operacion)
+    DB::table('folio_operacion')->insert([
+        'id_folio'      => $folio->id_folio,
+        'operacion_uid' => 'credito-' . uniqid(),
+        'tipo'          => 'credito_inicial',
+        'total'         => $creditoInicial,
+        'payload'       => json_encode([
+            'metodo' => $metodoPago,
+            'nota'   => 'Depósito inicial de respaldo registrado en check-in',
+        ], JSON_UNESCAPED_UNICODE),
+        'created_at'    => now(),
+        'updated_at'    => now(),
+    ]);
 
-                    app(\App\Http\Controllers\Api\folio\FolioDistribucionController::class)
-                        ->distribuir($distribucionRequest, $folio->id_folio);
-                }
-            } else {
-                // Caso general: todo al titular
-                $resumen = DB::table('vw_folio_resumen')->where('id_folio', $folio->id_folio)->first();
+    // Actualizar total del folio
+    $folio->update([
+        'total' => DB::raw("total + $creditoInicial")
+    ]);
+}
 
-                if ($resumen && (float)$resumen->cargos_sin_persona > 0) {
-                    $distribucionRequest = new \Illuminate\Http\Request([
-                        'operacion_uid' => 'auto-general-' . uniqid(),
-                        'strategy'      => 'single',
-                        'responsables'  => [['id_cliente' => $data['id_cliente_titular']]]
-                    ]);
+// ================================================
+// 9️⃣ Aplicar distribución automática de cargos
+// ================================================
+$pagoModo = $data['pago_modo'] ?? 'general'; // 'general' o 'por_persona'
 
-                    app(\App\Http\Controllers\Api\folio\FolioDistribucionController::class)
-                        ->distribuir($distribucionRequest, $folio->id_folio);
-                }
-            }
+if ($pagoModo === 'por_persona' && !empty($acompanantesCreados)) {
+    $resumen = DB::table('vw_folio_resumen')->where('id_folio', $folio->id_folio)->first();
 
-            // 9️⃣ Respuesta final
-            return response()->json([
-                'message'      => 'Check-in realizado correctamente.',
-                'estadia'      => $estadia->fresh(['estado']),
-                'acompanantes' => $acompanantesCreados,
-                'asignacion'   => $asign->fresh(),
-                'folio'        => $folio->id_folio,
-                'checkin_at'   => now()->toDateTimeString(),
-            ], 201);
-        });
+    if ($resumen && (float)$resumen->cargos_sin_persona > 0) {
+        $clientes = collect($acompanantesCreados)
+            ->pluck('id_cliente')
+            ->prepend($data['id_cliente_titular'])
+            ->map(fn($id) => ['id_cliente' => $id])
+            ->values()
+            ->toArray();
+
+        $distribucionRequest = new \Illuminate\Http\Request([
+            'operacion_uid' => 'auto-dist-' . uniqid(),
+            'strategy'      => 'equal',
+            'responsables'  => $clientes
+        ]);
+
+        app(\App\Http\Controllers\Api\folio\FolioDistribucionController::class)
+            ->distribuir($distribucionRequest, $folio->id_folio);
+    }
+} else {
+    // Caso general: todo al titular
+    $resumen = DB::table('vw_folio_resumen')->where('id_folio', $folio->id_folio)->first();
+
+    if ($resumen && (float)$resumen->cargos_sin_persona > 0) {
+        $distribucionRequest = new \Illuminate\Http\Request([
+            'operacion_uid' => 'auto-general-' . uniqid(),
+            'strategy'      => 'single',
+            'responsables'  => [['id_cliente' => $data['id_cliente_titular']]]
+        ]);
+
+        app(\App\Http\Controllers\Api\folio\FolioDistribucionController::class)
+            ->distribuir($distribucionRequest, $folio->id_folio);
+    }
+}
+
+// ================================================
+// 🔟 Respuesta final
+// ================================================
+return response()->json([
+    'message'      => 'Check-in realizado correctamente.',
+    'estadia'      => $estadia->fresh(['estado']),
+    'acompanantes' => $acompanantesCreados,
+    'asignacion'   => $asign->fresh(),
+    'folio'        => $folio->id_folio,
+    'checkin_at'   => now()->toDateTimeString(),
+], 201);
+
+}); // Cierre del bloque de transacción principal
+
+        // === Registrar crédito inicial si el huésped deja depósito o respaldo ===
+        $creditoInicial = $data['credito_inicial'] ?? 0.0; // puede venir del front
+
+        if ($creditoInicial > 0) {
+            // Actualizamos el folio con ese crédito
+            DB::table('folio')
+                ->where('id_folio', $folio->id_folio)
+                ->update(['credito_disponible' => $creditoInicial]);
+
+            // Insertamos movimiento de crédito en el historial contable
+            DB::table('folio_linea')->insert([
+                'id_folio'    => $folio->id_folio,
+                'id_cliente'  => $data['id_cliente_titular'],
+                'descripcion' => 'Crédito inicial o depósito de respaldo',
+                'monto'       => $creditoInicial,
+                'created_at'  => now(),
+                'updated_at'  => now(),
+            ]);
+
+            // Registramos la operación en folio_operacion (opcional)
+            DB::table('folio_operacion')->insert([
+                'id_folio'      => $folio->id_folio,
+                'operacion_uid' => 'credito-' . uniqid(),
+                'tipo'          => 'credito_inicial',
+                'total'         => $creditoInicial,
+                'payload'       => json_encode([
+                    'metodo' => $data['metodo_pago'] ?? 'Tarjeta',
+                    'nota' => 'Depósito inicial de respaldo',
+                ], JSON_UNESCAPED_UNICODE),
+                'created_at'    => now(),
+                'updated_at'    => now(),
+            ]);
+        }
+
     }
 }
