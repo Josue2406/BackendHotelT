@@ -48,8 +48,8 @@ use App\Http\Controllers\Api\Huespedes\HuespedController;   // ← IMPORTANTE
 
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/register', [AuthController::class, 'register']);
-Route::post('/forgot-password', [ForgotPasswordController::class, 'sendCode']);
-Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword']);
+Route::post('/auth/forgot-password', [ForgotPasswordController::class, 'sendCode']);
+Route::post('/auth/reset-password', [ForgotPasswordController::class, 'resetPassword']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/auth/me', [AuthController::class, 'me']);
@@ -213,6 +213,8 @@ Ajuste de fechas de la estadía
 Check-out (crea evento)
 */
 
+
+/*
 Route::prefix('frontdesk')->group(function () {
     // Walk-in
     Route::post('/walkin', [WalkInController::class, 'store']);
@@ -238,18 +240,49 @@ Route::prefix('frontdesk')->group(function () {
     Route::post('/estado-estadia', [EstadoEstadiaController::class, 'store']);
 
 
+use App\Http\Controllers\Api\frontdesk\EstadiaController;
 
+Route::get('/frontdesk/estadia/{id}', [EstadiaController::class, 'show']);
     //Estadias
-     Route::get('/estadia/{estadia}', [EstadiasController::class, 'show']);   // detalle
+    // Route::get('/estadia/{estadia}', [EstadiasController::class, 'show']);   // detalle
   Route::get('/estadias',          [EstadiasController::class, 'index']);  // listado/paginado
 
 
   Route::post('/estadia/{estadia}/room-move', [EstadiasController::class, 'roomMove']);
   Route::patch('/estadia/{estadia}/fechas',    [EstadiasController::class, 'updateFechas']);
   Route::post('/estadia/{estadia}/checkout',  [EstadiasController::class, 'checkout']);
-  Route::get('/estadia/{estadia}',            [EstadiasController::class, 'show']);
+  //Route::get('/estadia/{estadia}',            [EstadiasController::class, 'show']);
   Route::get('/estadias',                     [EstadiasController::class, 'index']);
+}); */
+
+
+
+Route::prefix('frontdesk')->group(function () {
+
+
+      Route::get('/estadia/by-reserva/{codigo}', [\App\Http\Controllers\Api\frontdesk\EstadiaController::class, 'showByReserva']);
+    // Walk-in
+    Route::post('/walkin', [WalkInController::class, 'store']);
+
+    // Check-in desde reserva
+    Route::post('/reserva/{reserva}/checkin', [ReservasCheckinController::class, 'store']);
+
+    // Estado de estadía
+    Route::get('/estado-estadia',  [EstadoEstadiaController::class, 'index']);
+    Route::post('/estado-estadia', [EstadoEstadiaController::class, 'store']);
+
+    // ✅ Estadia (detalle)
+     Route::get('/estadia/{id}', [\App\Http\Controllers\Api\frontdesk\EstadiaController::class, 'show']);
+
+    // ✅ Estadías (listado general)
+    Route::get('/estadias', [EstadiasController::class, 'index']);
+
+    // ✅ Movimientos / Fechas / Checkout
+    Route::post('/estadia/{estadia}/room-move', [EstadiasController::class, 'roomMove']);
+    Route::patch('/estadia/{estadia}/fechas', [EstadiasController::class, 'updateFechas']);
+    Route::post('/estadia/{estadia}/checkout', [EstadiasController::class, 'checkout']);
 });
+
 
 
 Route::prefix('clientes')->group(function () {
@@ -308,6 +341,8 @@ Route::prefix('folios')->group(function () {
     Route::get('{idFolio}/historial', [FolioHistorialController::class, 'index']);
     Route::get('{idFolio}/historial/export', [FolioHistorialExportController::class, 'exportCsv']);
 });
+
+
 
 //-------------------------------------------------------------------------------------------------
 
