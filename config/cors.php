@@ -20,13 +20,10 @@
 return [
     'paths' => ['api/*', 'sanctum/csrf-cookie', 'login', 'logout'],
     'allowed_methods' => ['*'],               // OPTIONS/GET/POST/PUT/PATCH/DELETE
-    'allowed_origins' => [
-        'http://localhost:5174',
-        'http://127.0.0.1:5174',
-        'http://localhost:5173',
-        'http://127.0.0.1:5173',
-        'https://una-hotel-system.vercel.app',
-    ],
+
+    // Lee los orígenes permitidos desde .env para facilitar cambios sin tocar código
+    'allowed_origins' => array_filter(explode(',', env('CORS_ALLOWED_ORIGINS', ''))),
+
     'allowed_origins_patterns' => [],
     'allowed_headers' => ['*'],
     'exposed_headers' => ['*'],
