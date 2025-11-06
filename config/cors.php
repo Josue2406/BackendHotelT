@@ -20,10 +20,7 @@
 return [
     'paths' => ['api/*', 'sanctum/csrf-cookie', 'login', 'logout'],
     'allowed_methods' => ['*'],               // OPTIONS/GET/POST/PUT/PATCH/DELETE
-
-    // Lee los orígenes permitidos desde .env para facilitar cambios sin tocar código
-    'allowed_origins' => array_filter(explode(',', env('CORS_ALLOWED_ORIGINS', ''))),
-
+    'allowed_origins' => ['*'],               // Permite todos los orígenes
     'allowed_origins_patterns' => [],
     'allowed_headers' => ['*'],
     'exposed_headers' => ['*'],
