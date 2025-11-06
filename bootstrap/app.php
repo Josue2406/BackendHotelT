@@ -34,8 +34,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up'
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // 👇 esto activa CORS globalmente
-        $middleware->append(HandleCors::class);
+        // 👇 esto activa CORS globalmente - usando prepend para que se ejecute primero
+        $middleware->prepend(HandleCors::class);
 
         // Por defecto el grupo 'api' NO tiene CSRF.
         // No agregues VerifyCsrfToken aquí.
