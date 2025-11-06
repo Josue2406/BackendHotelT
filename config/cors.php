@@ -18,19 +18,15 @@
 
 
 return [
-    'paths' => ['api/*', 'sanctum/csrf-cookie'],
-    'allowed_methods' => ['*'],               // OPTIONS/GET/POST/
-    // 'allowed_origins' => [
-    //     'http://localhost:5174',
-    //     'http://127.0.0.1:5174',
-    //     'http://localhost:5173',
-    //     'http://127.0.0.1:5173',
-    //     'https://una-hotel-system.vercel.app',
-    // ],
-    'allowed_origins' => ['*'],
+    'paths' => ['api/*', 'sanctum/csrf-cookie', 'login', 'logout'],
+    'allowed_methods' => ['*'],               // OPTIONS/GET/POST/PUT/PATCH/DELETE
+
+    // Lee los orígenes permitidos desde .env para facilitar cambios sin tocar código
+    'allowed_origins' => array_filter(explode(',', env('CORS_ALLOWED_ORIGINS', ''))),
+
     'allowed_origins_patterns' => [],
     'allowed_headers' => ['*'],
-    'exposed_headers' => [],
-    'max_age' => 0,
-    'supports_credentials' => false,         // déjalo en false si NO envías cookies
+    'exposed_headers' => ['*'],
+    'max_age' => 86400,                       // Cache de preflight por 24 horas
+    'supports_credentials' => true,           // Permite envío de cookies/credenciales
 ];
