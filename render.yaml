@@ -1,0 +1,158 @@
+services:
+  # Servicio principal: Laravel API + Queue Worker + Reverb WebSocket
+  - type: web
+    name: backend-hotel
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: free # Cambiar a 'starter' ($7/mes) para producción
+    region: oregon # Opciones: oregon, ohio, frankfurt, singapore
+
+    # Health check
+    healthCheckPath: /
+
+    # Variables de entorno
+    envVars:
+      # App
+      - key: APP_NAME
+        value: Lanaku
+
+      - key: APP_ENV
+        value: production
+
+      - key: APP_DEBUG
+        value: false
+
+      - key: APP_KEY
+        sync: false
+        value: base64:oaulL3b2rlL+N26JxhQXyTaJmkxCP7m1BMUIFA2p6sA=
+
+      - key: APP_URL
+        value: https://backendhotelt.onrender.com
+
+      - key: APP_TIMEZONE
+        value: America/Costa_Rica
+
+      - key: APP_LOCALE
+        value: en
+
+      # CORS
+      - key: CORS_ALLOWED_ORIGINS
+        value: http://localhost:5173,http://localhost:5174,https://una-hotel-system.vercel.app
+
+      # Sanctum
+      - key: SANCTUM_STATEFUL_DOMAINS
+        value: localhost:5173,localhost:5174,una-hotel-system.vercel.app
+
+      # Base de datos (Railway MySQL)
+      - key: DB_CONNECTION
+        value: mysql
+
+      - key: DB_HOST
+        value: yamanote.proxy.rlwy.net
+
+      - key: DB_PORT
+        value: 31248
+
+      - key: DB_DATABASE
+        value: railway
+
+      - key: DB_USERNAME
+        value: root
+
+      - key: DB_PASSWORD
+        sync: false
+        value: GXQOumMdKxjXpVwRxOagzxiZNoZXJlNo
+
+      # Queue
+      - key: QUEUE_CONNECTION
+        value: database
+
+      # Cache
+      - key: CACHE_STORE
+        value: database
+
+      # Session
+      - key: SESSION_DRIVER
+        value: database
+
+      - key: SESSION_LIFETIME
+        value: 120
+
+      - key: SESSION_SECURE_COOKIE
+        value: true
+
+      - key: SESSION_SAME_SITE
+        value: none
+
+      - key: SESSION_HTTP_ONLY
+        value: true
+
+      # Broadcasting
+      - key: BROADCAST_CONNECTION
+        value: reverb
+
+      # Reverb WebSocket
+      - key: REVERB_APP_ID
+        value: 897815
+
+      - key: REVERB_APP_KEY
+        value: wibscmvwkk1ndpotbxdw
+
+      - key: REVERB_APP_SECRET
+        sync: false
+        value: smjzmkrz7ztwlqcejngw
+
+      - key: REVERB_HOST
+        value: backendhotelt.onrender.com
+
+      - key: REVERB_PORT
+        value: 443
+
+      - key: REVERB_SCHEME
+        value: https
+
+      - key: REVERB_ALLOWED_ORIGINS
+        value: https://una-hotel-system.vercel.app,http://localhost:5173,http://localhost:5174
+
+      # Redis (interno)
+      - key: REDIS_HOST
+        value: 127.0.0.1
+
+      - key: REDIS_PORT
+        value: 6379
+
+      # Mail (Gmail SMTP)
+      - key: MAIL_MAILER
+        value: smtp
+
+      - key: MAIL_HOST
+        value: smtp.gmail.com
+
+      - key: MAIL_PORT
+        value: 587
+
+      - key: MAIL_USERNAME
+        value: unaturismo3@gmail.com
+
+      - key: MAIL_PASSWORD
+        sync: false
+        value: hjotiimviglomexc
+
+      - key: MAIL_ENCRYPTION
+        value: tls
+
+      - key: MAIL_FROM_ADDRESS
+        value: unaturismo3@gmail.com
+
+      - key: MAIL_FROM_NAME
+        value: Hotel Lanaku
+
+      - key: MAIL_LOGO_URL
+        value: https://backendhotelt.onrender.com/assets/Lanaku.jpeg
+
+      # Logs
+      - key: LOG_CHANNEL
+        value: stack
+
+      - key: LOG_LEVEL
+        value: debug
