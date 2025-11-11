@@ -220,6 +220,27 @@ class ReservaController extends Controller
                     ->exists();
 
                 if ($choqueReserva) {
+                    // Log para debug
+                    $reservasChocan = \App\Models\reserva\ReservaHabitacion::where('id_habitacion', $hab['id_habitacion'])
+                        ->whereHas('reserva', function($q) {
+                            $q->where('id_estado_res', 1);
+                        })
+                        ->where('fecha_llegada', '<', $hab['fecha_salida'])
+                        ->where('fecha_salida', '>', $hab['fecha_llegada'])
+                        ->with('reserva')
+                        ->get();
+                    Log::info('Reservas que chocan para habitación ' . $hab['id_habitacion'], [
+                        'fecha_llegada' => $hab['fecha_llegada'],
+                        'fecha_salida' => $hab['fecha_salida'],
+                        'reservas' => $reservasChocan->map(function($rh) {
+                            return [
+                                'id_reserva' => $rh->reserva->id_reserva ?? null,
+                                'id_estado_res' => $rh->reserva->id_estado_res ?? null,
+                                'fecha_llegada' => $rh->fecha_llegada,
+                                'fecha_salida' => $rh->fecha_salida,
+                            ];
+                        })
+                    ]);
                     throw new \Exception("La habitación {$hab['id_habitacion']} no está disponible en el rango especificado.");
                 }
 
