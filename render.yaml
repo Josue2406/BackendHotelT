@@ -37,11 +37,11 @@ services:
 
       # CORS (CRÍTICO: debe coincidir con el .env)
       - key: CORS_ALLOWED_ORIGINS
-        value: https://una-hotel-system.vercel.app,https://test-login-tho.vercel.app,http://localhost:5173,http://localhost:5174
+        value: https://una-hotel-system.vercel.app,https://test-login-tho.vercel.app,https://login-example-gamma.vercel.app,http://localhost:5173,http://localhost:5174
 
       # Sanctum (dominios permitidos para autenticación stateful - SIN http/https)
       - key: SANCTUM_STATEFUL_DOMAINS
-        value: una-hotel-system.vercel.app,test-login-tho.vercel.app,localhost:5173,localhost:5174
+        value: una-hotel-system.vercel.app,test-login-tho.vercel.app,login-example-gamma.vercel.app,localhost:5173,localhost:5174
 
       # Base de datos (Railway MySQL)
       - key: DB_CONNECTION
