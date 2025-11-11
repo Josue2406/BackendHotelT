@@ -1,4 +1,3 @@
-
 <?php
 use App\Http\Controllers\Api\frontdesk\FrontDeskController; //Ruta nueva
 use App\Http\Controllers\Api\PagoController;
@@ -24,6 +23,7 @@ use App\Http\Controllers\Api\habitaciones\DisponibilidadController;
 use App\Http\Controllers\Api\reserva\{
   ReservaController, ReservaWebController, ReservaHabitacionController, ReservaServicioController, ReservaPoliticaController, ServicioController, ReporteController
 };
+// use App\Http\Controllers\Api\reserva\ServicioController; // agregado - REMOVED DUPLICATE
 
 
 use App\Http\Controllers\Api\frontdesk\WalkinController;
@@ -82,7 +82,7 @@ Route::apiResource('habitacion-amenidad',HabitacionAmenidadController::class)->o
 Route::apiResource('fuentes', FuenteController::class);
 Route::apiResource('tipos-doc', TipoDocController::class);
 Route::apiResource('estados-reserva', EstadoReservaController::class);
-//Route::apiResource('clientes', ClienteController::class);
+Route::apiResource('servicios', ServicioController::class); // recurso servicios
 Route::apiResource('habitaciones', HabitacionController::class)->only(['index','show','store','update']);
 Route::apiResource('bloqueos', BloqueoOperativoController::class)->only(['index','show','store','destroy']);
 
@@ -188,7 +188,30 @@ Route::get('monedas/convertir', [ReservaController::class, 'convertirMoneda']);
 
 Route::apiResource('temporadas', TemporadaController::class);
 Route::apiResource('temporada-reglas', TemporadaReglaController::class);
-Route::apiResource('servicios', ServicioController::class);
+
+// Habitaciones por reserva
+Route::get('reservas/{reserva}/habitaciones',      [ReservaHabitacionController::class, 'index']);
+Route::post('reservas/{reserva}/habitaciones',     [ReservaHabitacionController::class, 'store']);
+Route::delete('reservas/{reserva}/habitaciones/{id}', [ReservaHabitacionController::class, 'destroy']);
+
+// Servicios por reserva
+Route::get('reservas/{reserva}/servicios',         [ReservaServicioController::class, 'index']);
+Route::post('reservas/{reserva}/servicios',        [ReservaServicioController::class, 'store']);
+Route::post('reservas/{reserva}/servicios/batch',  [ReservaServicioController::class, 'storeBatch']); // agregado
+Route::put('reservas/{reserva}/servicios/{id}',    [ReservaServicioController::class, 'update']);
+Route::delete('reservas/{reserva}/servicios/{id}', [ReservaServicioController::class, 'destroy']);
+
+// Políticas por reserva
+Route::get('reservas/{reserva}/politicas',         [ReservaPoliticaController::class, 'index']);
+Route::post('reservas/{reserva}/politicas',        [ReservaPoliticaController::class, 'store']);
+Route::delete('reservas/{reserva}/politicas/{id}', [ReservaPoliticaController::class, 'destroy']);
+
+// Acciones de reserva
+Route::post('reservas/{reserva}/confirmar', [ReservaController::class, 'confirmar']);
+Route::post('reservas/{reserva}/cancelar',  [ReservaController::class, 'cancelar']);
+Route::post('reservas/{reserva}/cotizar',   [ReservaController::class, 'cotizar']);
+Route::post('reservas/{reserva}/no-show',   [ReservaController::class, 'noShow']);
+Route::post('reservas/{reserva}/checkin',   [ReservaController::class, 'generarEstadia']);
 
 
 

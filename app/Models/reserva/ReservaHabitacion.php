@@ -10,6 +10,9 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\habitacion\Habitacione;
+use App\Models\reserva\Reserva;
+use App\Models\CreditoRespaldo;
+use App\Models\check_out\Folio;
 
 /**
  * Class ReservaHabitacion
