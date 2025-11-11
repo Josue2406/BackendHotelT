@@ -201,61 +201,74 @@ class ReservaController extends Controller
     $data['total_monto_reserva'] = 0;
 
     // 3) Crear reserva + habitaciones dentro de transacción
-    $reservaId = DB::transaction(function () use ($data) {
-        $habitaciones = $data['habitaciones'];
-        unset($data['habitaciones']);
+    try {
+        $reservaId = DB::transaction(function () use ($data) {
+            $habitaciones = $data['habitaciones'];
+            unset($data['habitaciones']);
 
-        $reserva = Reserva::create($data);
+            $reserva = Reserva::create($data);
 
-        $totalReserva = 0;
-        foreach ($habitaciones as $hab) {
-            // disponibilidad
-            $choqueReserva = \App\Models\reserva\ReservaHabitacion::where('id_habitacion', $hab['id_habitacion'])
-                ->where('fecha_llegada', '<', $hab['fecha_salida'])
-                ->where('fecha_salida', '>', $hab['fecha_llegada'])
-                ->exists();
+            $totalReserva = 0;
+            foreach ($habitaciones as $hab) {
+                // disponibilidad
+                $choqueReserva = \App\Models\reserva\ReservaHabitacion::where('id_habitacion', $hab['id_habitacion'])
+                    ->where('fecha_llegada', '<', $hab['fecha_salida'])
+                    ->where('fecha_salida', '>', $hab['fecha_llegada'])
+                    ->exists();
 
-            if ($choqueReserva) {
-                throw new \Exception("La habitación {$hab['id_habitacion']} no está disponible en el rango especificado.");
+                if ($choqueReserva) {
+                    throw new \Exception("La habitación {$hab['id_habitacion']} no está disponible en el rango especificado.");
+                }
+
+                // crear item
+                $reservaHab = $reserva->habitaciones()->create([
+                    'id_habitacion' => $hab['id_habitacion'],
+                    'fecha_llegada' => $hab['fecha_llegada'],
+                    'fecha_salida'  => $hab['fecha_salida'],
+                    'adultos'       => $hab['adultos'],
+                    'ninos'         => $hab['ninos'],
+                    'bebes'         => $hab['bebes'],
+                    'subtotal'      => 0,
+                ]);
+
+                // calcular subtotal
+                $reservaHab->load('habitacion');
+                $subtotal = $reservaHab->calcularSubtotal();
+                $reservaHab->update(['subtotal' => $subtotal]);
+                $totalReserva += $subtotal;
             }
 
-            // crear item
-            $reservaHab = $reserva->habitaciones()->create([
-                'id_habitacion' => $hab['id_habitacion'],
-                'fecha_llegada' => $hab['fecha_llegada'],
-                'fecha_salida'  => $hab['fecha_salida'],
-                'adultos'       => $hab['adultos'],
-                'ninos'         => $hab['ninos'],
-                'bebes'         => $hab['bebes'],
-                'subtotal'      => 0,
-            ]);
+            // total de la reserva
+            $reserva->update(['total_monto_reserva' => $totalReserva]);
 
-            // calcular subtotal
-            $reservaHab->load('habitacion');
-            $subtotal = $reservaHab->calcularSubtotal();
-            $reservaHab->update(['subtotal' => $subtotal]);
-            $totalReserva += $subtotal;
-        }
+            // 4) Enviar el correo SOLO después de commit
+            DB::afterCommit(function () use ($reserva) {
+                $fresh = $reserva->fresh()->load([
+                    'cliente',
+                    'estado',
+                    'fuente',
+                    'habitaciones.habitacion.tipoHabitacion'
+                ]);
 
-        // total de la reserva
-        $reserva->update(['total_monto_reserva' => $totalReserva]);
+                if ($fresh->cliente?->email) {
+                    $fresh->cliente->notify(new \App\Notifications\ReservaCreada($fresh));
+                }
+            });
 
-        // 4) Enviar el correo SOLO después de commit
-        DB::afterCommit(function () use ($reserva) {
-            $fresh = $reserva->fresh()->load([
-                'cliente',
-                'estado',
-                'fuente',
-                'habitaciones.habitacion.tipoHabitacion'
-            ]);
-
-            if ($fresh->cliente?->email) {
-                $fresh->cliente->notify(new \App\Notifications\ReservaCreada($fresh));
-            }
+            return $reserva->id_reserva;
         });
-
-        return $reserva->id_reserva;
-    });
+    } catch (\Exception $e) {
+        Log::error('Error creando reserva', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+            'data' => $data,
+            'user' => $usuarioAutenticado ? $usuarioAutenticado->id : null
+        ]);
+        return response()->json([
+            'success' => false,
+            'message' => 'Error interno del servidor: ' . $e->getMessage()
+        ], 500);
+    }
 
     // 5) Respuesta
     $reserva = Reserva::with(['cliente','estado','fuente','habitaciones.habitacion.tipoHabitacion'])
