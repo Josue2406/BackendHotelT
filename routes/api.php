@@ -16,7 +16,7 @@ use App\Http\Controllers\Api\catalogo\HabitacionAmenidadController;
 use App\Http\Controllers\Api\catalogo\FuenteController;
 use App\Http\Controllers\Api\catalogo\TipoDocController;
 use App\Http\Controllers\Api\catalogo\EstadoReservaController;
-use App\Http\Controllers\Api\Clientes\ClienteController;
+use App\Http\Controllers\Api\clientes\ClienteController;
 use App\Http\Controllers\Api\habitaciones\HabitacionController;
 use App\Http\Controllers\Api\habitaciones\BloqueoOperativoController;
 use App\Http\Controllers\Api\habitaciones\DisponibilidadController;
@@ -41,8 +41,8 @@ use App\Http\Controllers\Api\Auth\ForgotPasswordController;
 
 use App\Http\Controllers\Api\Auth\AuthController;
 
-use App\Http\Controllers\Api\Clientes\AuthClienteController;
-use App\Http\Controllers\Api\Clientes\PasswordResetClienteController;
+use App\Http\Controllers\Api\clientes\AuthClienteController;
+use App\Http\Controllers\Api\clientes\PasswordResetClienteController;
 use App\Http\Controllers\Api\Huespedes\HuespedController;   // ← IMPORTANTE
 // use App\Http\Controllers\Api\Clientes\ClienteIntakeController; // ← si usarás perfil-completo
 
