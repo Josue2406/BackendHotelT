@@ -18,12 +18,12 @@
 
 
 return [
-    'paths' => ['api/*', 'sanctum/csrf-cookie', 'login', 'logout'],
+    'paths' => ['api/*', 'sanctum/csrf-cookie'],
     'allowed_methods' => ['*'],
 
     // Lee los orígenes permitidos desde .env
     // IMPORTANTE: No se puede usar '*' con credentials:true
-    'allowed_origins' => array_filter(explode(',', env('CORS_ALLOWED_ORIGINS', ''))),
+    'allowed_origins' => array_filter(array_map('trim', explode(',', env('CORS_ALLOWED_ORIGINS', '')))),
 
     'allowed_origins_patterns' => [],
     'allowed_headers' => ['*'],
