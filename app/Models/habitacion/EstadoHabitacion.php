@@ -29,7 +29,23 @@ class EstadoHabitacion extends Model
     protected $fillable = [
         'nombre',
         'descripcion',
-        'tipo', 
+        'tipo',
+    ];
+
+    // Constantes para estados de habitación
+    public const ESTADO_DISPONIBLE = 1;
+    public const ESTADO_OCUPADA = 2;
+    public const ESTADO_SUCIA = 3;
+    public const ESTADO_LIMPIA = 4;
+    public const ESTADO_MANTENIMIENTO = 5;
+
+    // Nombres de estados
+    public const ESTADOS_VALIDOS = [
+        self::ESTADO_DISPONIBLE => 'Disponible',
+        self::ESTADO_OCUPADA => 'Ocupada',
+        self::ESTADO_SUCIA => 'Sucia',
+        self::ESTADO_LIMPIA => 'Limpia',
+        self::ESTADO_MANTENIMIENTO => 'Mantenimiento',
     ];
 
     /** Relaciones */

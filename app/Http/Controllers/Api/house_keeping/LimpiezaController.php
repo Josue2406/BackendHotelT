@@ -134,8 +134,22 @@ class LimpiezaController extends Controller
         'estadoHabitacion',
     ]);
 
-    // Evento si cambia la asignación
-    if ($limpieza->wasChanged('id_usuario_asigna') && $limpieza->id_usuario_asigna !== null) {
+    // 🔍 DEBUG: Ver qué llega en el request
+    \Log::info('🔍 UPDATE Limpieza - Request Data', [
+        'limpieza_id' => $limpieza->id_limpieza ?? $limpieza->id,
+        'request_has_id_usuario' => $request->has('id_usuario_asigna'),
+        'request_id_usuario' => $request->input('id_usuario_asigna'),
+        'limpieza_id_usuario_after_update' => $limpieza->id_usuario_asigna,
+        'request_all' => $request->all(),
+    ]);
+
+    // Evento si se incluye asignación en el request
+    if ($request->has('id_usuario_asigna') && $limpieza->id_usuario_asigna !== null) {
+        \Log::info('✅ DISPARANDO EVENTO NuevaLimpiezaAsignada', [
+            'habitacion' => $limpieza->habitacion->numero ?? 'N/A',
+            'asignado_a' => optional($limpieza->asignador)->nombre ?? 'Sin asignar',
+        ]);
+
         event(new NuevaLimpiezaAsignada([
             'id'         => $limpieza->id_limpieza ?? $limpieza->id,
             'habitacion' => $limpieza->habitacion->numero ?? 'N/A',
@@ -144,6 +158,11 @@ class LimpiezaController extends Controller
             'fecha'      => $limpieza->fecha_inicio ?? now()->toDateTimeString(),
             'prioridad'  => $limpieza->prioridad,
         ]));
+    } else {
+        \Log::info('❌ NO se cumple condición para disparar evento', [
+            'request_has' => $request->has('id_usuario_asigna'),
+            'id_usuario_value' => $limpieza->id_usuario_asigna,
+        ]);
     }
 
     return new LimpiezaResource($limpieza);
@@ -165,5 +184,11 @@ class LimpiezaController extends Controller
         ]);
 
         return new LimpiezaResource($limpieza->fresh()->load(['estadoHabitacion']));
+    }
+
+    public function destroy(Limpieza $limpieza)
+    {
+        $limpieza->delete();
+        return response()->noContent();
     }
 }

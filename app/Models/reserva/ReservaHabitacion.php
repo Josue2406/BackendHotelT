@@ -10,7 +10,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\habitacion\Habitacione;
-use App\Models\reserva\Reserva;	
+use App\Models\reserva\Reserva;
 use App\Models\CreditoRespaldo;
 use App\Models\check_out\Folio;
 
@@ -22,7 +22,10 @@ use App\Models\check_out\Folio;
  * @property int|null $id_habitacion
  * @property Carbon $fecha_llegada
  * @property Carbon $fecha_salida
- * @property int $pax_total
+ * @property int $adultos
+ * @property int $ninos
+ * @property int $bebes
+ * @property float $subtotal
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * 
@@ -41,7 +44,10 @@ class ReservaHabitacion extends Model
 		'id_habitacion' => 'int',
 		'fecha_llegada' => 'datetime',
 		'fecha_salida' => 'datetime',
-		'pax_total' => 'int'
+		'adultos' => 'int',
+		'ninos' => 'int',
+		'bebes' => 'int',
+		'subtotal' => 'float'
 	];
 
 	protected $fillable = [
@@ -49,7 +55,10 @@ class ReservaHabitacion extends Model
 		'id_habitacion',
 		'fecha_llegada',
 		'fecha_salida',
-		'pax_total'
+		'adultos',
+		'ninos',
+		'bebes',
+		'subtotal'
 	];
 
 	/*
@@ -72,6 +81,17 @@ class ReservaHabitacion extends Model
 		return $this->belongsTo(Reserva::class, 'id_reserva');
 	}
 
+	// Alias legibles
+	public function reserva()
+	{
+		return $this->id_reserva();
+	}
+
+	public function habitacion()
+	{
+		return $this->id_habitacion();
+	}
+
 	public function credito_respaldos_where_id_reserva_hab()
 	{
 		return $this->hasMany(CreditoRespaldo::class, 'id_reserva_hab');
@@ -80,5 +100,25 @@ class ReservaHabitacion extends Model
 	public function folios_where_id_reserva_hab()
 	{
 		return $this->hasMany(Folio::class, 'id_reserva_hab');
+	}
+
+	/**
+	 * Calcular el subtotal de esta habitación
+	 * (noches × precio_base de la habitación)
+	 * TODO: Integrar con PricingService para aplicar temporadas
+	 */
+	public function calcularSubtotal(): float
+	{
+		if (!$this->habitacion || !$this->fecha_llegada || !$this->fecha_salida) {
+			return 0.0;
+		}
+
+		// Calcular noches
+		$noches = $this->fecha_llegada->diffInDays($this->fecha_salida);
+
+		// Precio base de la habitación (desde la tabla habitaciones, no tipo_habitacion)
+		$precioBase = $this->habitacion->precio_base ?? 0;
+
+		return round($noches * $precioBase, 2);
 	}
 }

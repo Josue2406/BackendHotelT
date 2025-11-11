@@ -18,6 +18,11 @@ return [
             'driver'   => 'sanctum',
             'provider' => 'users',
         ],
+
+        'cliente' => [
+        'driver' => 'sanctum',   // para API token
+        'provider' => 'clientes',
+    ],
     ],
 
     'providers' => [
@@ -27,6 +32,10 @@ return [
         ],
         // Si quisieras provider por DB directa:
         // 'users' => ['driver' => 'database', 'table' => 'users'],
+        'clientes' => [
+        'driver' => 'eloquent',
+        'model'  => App\Models\cliente\Cliente::class,
+    ],
     ],
 
     'passwords' => [
@@ -36,6 +45,12 @@ return [
             'expire' => 60,
             'throttle' => 60,
         ],
+         'clientes' => [
+        'provider' => 'clientes',
+        'table' => 'password_reset_tokens', // Laravel 10+
+        'expire' => 60,  // minutos
+        'throttle' => 60,
+    ],
     ],
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
