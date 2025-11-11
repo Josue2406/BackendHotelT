@@ -46,6 +46,14 @@ use App\Http\Controllers\Api\Clientes\PasswordResetClienteController;
 use App\Http\Controllers\Api\Huespedes\HuespedController;   // ← IMPORTANTE
 // use App\Http\Controllers\Api\Clientes\ClienteIntakeController; // ← si usarás perfil-completo
 
+// Ruta temporal para limpiar caché (ELIMINAR después de probar)
+Route::get('/clear-cache', function () {
+    \Illuminate\Support\Facades\Artisan::call('config:clear');
+    \Illuminate\Support\Facades\Artisan::call('cache:clear');
+    \Illuminate\Support\Facades\Artisan::call('route:clear');
+    return response()->json(['message' => 'Cache cleared successfully!']);
+});
+
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/forgot-password', [ForgotPasswordController::class, 'sendCode']);
