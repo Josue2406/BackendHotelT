@@ -23,7 +23,7 @@ return [
 
     // Lee los orígenes permitidos desde .env
     // IMPORTANTE: No se puede usar '*' con credentials:true
-    'allowed_origins' => ['https://lanaku-hotel.onrender.com'],
+    'allowed_origins' => ['https://lanaku-hotel.onrender.com', 'https://una-hotel-system.vercel.app'],
 
     'allowed_origins_patterns' => [],
     'allowed_headers' => ['*'],
