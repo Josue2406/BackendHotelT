@@ -294,6 +294,9 @@ Route::prefix('frontdesk')->group(function () {
     Route::get('/estado-estadia',  [EstadoEstadiaController::class, 'index']);
     Route::post('/estado-estadia', [EstadoEstadiaController::class, 'store']);
 
+    // Dashboard stats
+    Route::get('/dashboard/stats', [FrontDeskController::class, 'stats']);
+
     // ✅ Estadia (detalle)
      Route::get('/estadia/{id}', [\App\Http\Controllers\Api\frontdesk\EstadiaController::class, 'show']);
 

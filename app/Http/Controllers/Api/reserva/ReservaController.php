@@ -213,7 +213,7 @@ class ReservaController extends Controller
                 // disponibilidad - solo considerar reservas confirmadas (id_estado_res = 1)
                 $choqueReserva = \App\Models\reserva\ReservaHabitacion::where('id_habitacion', $hab['id_habitacion'])
                     ->whereHas('reserva', function($q) {
-                        $q->where('id_estado_res', 1); // Solo reservas confirmadas
+                        $q->where('id_estado_res', '>=', 3); // Solo reservas confirmadas o superiores (no pendientes ni canceladas)
                     })
                     ->where('fecha_llegada', '<', $hab['fecha_salida'])
                     ->where('fecha_salida', '>', $hab['fecha_llegada'])
@@ -223,7 +223,7 @@ class ReservaController extends Controller
                     // Log para debug
                     $reservasChocan = \App\Models\reserva\ReservaHabitacion::where('id_habitacion', $hab['id_habitacion'])
                         ->whereHas('reserva', function($q) {
-                            $q->where('id_estado_res', 1);
+                            $q->where('id_estado_res', '>=', 3);
                         })
                         ->where('fecha_llegada', '<', $hab['fecha_salida'])
                         ->where('fecha_salida', '>', $hab['fecha_llegada'])
