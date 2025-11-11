@@ -24,7 +24,7 @@ services:
 
       - key: APP_KEY
         sync: false
-        value: base64:oaulL3b2rlL+N26JxhQXyTaJmkxCP7m1BMUIFA2p6sA=
+        # CONFIGURAR EN RENDER DASHBOARD: Genera con 'php artisan key:generate'
 
       - key: APP_URL
         value: https://backendhotelt.onrender.com
@@ -48,20 +48,24 @@ services:
         value: mysql
 
       - key: DB_HOST
-        value: yamanote.proxy.rlwy.net
+        sync: false
+        # CONFIGURAR EN RENDER DASHBOARD: Host de tu base de datos
 
       - key: DB_PORT
-        value: 31248
+        sync: false
+        # CONFIGURAR EN RENDER DASHBOARD: Puerto de tu base de datos
 
       - key: DB_DATABASE
-        value: railway
+        sync: false
+        # CONFIGURAR EN RENDER DASHBOARD: Nombre de tu base de datos
 
       - key: DB_USERNAME
-        value: root
+        sync: false
+        # CONFIGURAR EN RENDER DASHBOARD: Usuario de tu base de datos
 
       - key: DB_PASSWORD
         sync: false
-        value: GXQOumMdKxjXpVwRxOagzxiZNoZXJlNo
+        # CONFIGURAR EN RENDER DASHBOARD: Contraseña de tu base de datos
 
       # Queue
       - key: QUEUE_CONNECTION
@@ -93,14 +97,16 @@ services:
 
       # Reverb WebSocket
       - key: REVERB_APP_ID
-        value: 897815
+        sync: false
+        # CONFIGURAR EN RENDER DASHBOARD: ID de tu aplicación Reverb
 
       - key: REVERB_APP_KEY
-        value: wibscmvwkk1ndpotbxdw
+        sync: false
+        # CONFIGURAR EN RENDER DASHBOARD: App Key de Reverb
 
       - key: REVERB_APP_SECRET
         sync: false
-        value: smjzmkrz7ztwlqcejngw
+        # CONFIGURAR EN RENDER DASHBOARD: Secret de Reverb
 
       - key: REVERB_HOST
         value: backendhotelt.onrender.com
@@ -132,17 +138,19 @@ services:
         value: 587
 
       - key: MAIL_USERNAME
-        value: unaturismo3@gmail.com
+        sync: false
+        # CONFIGURAR EN RENDER DASHBOARD: Email de Gmail
 
       - key: MAIL_PASSWORD
         sync: false
-        value: hjotiimviglomexc
+        # CONFIGURAR EN RENDER DASHBOARD: Contraseña de aplicación de Gmail
 
       - key: MAIL_ENCRYPTION
         value: tls
 
       - key: MAIL_FROM_ADDRESS
-        value: unaturismo3@gmail.com
+        sync: false
+        # CONFIGURAR EN RENDER DASHBOARD: Email del remitente
 
       - key: MAIL_FROM_NAME
         value: Hotel Lanaku
