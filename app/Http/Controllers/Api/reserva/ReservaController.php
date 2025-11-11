@@ -210,7 +210,24 @@ class ReservaController extends Controller
 
             $totalReserva = 0;
             foreach ($habitaciones as $hab) {
-                // disponibilidad - solo considerar reservas confirmadas (id_estado_res = 1)
+                // Primero, log todas las reservas de esta habitación sin filtro
+                $todasReservas = \App\Models\reserva\ReservaHabitacion::where('id_habitacion', $hab['id_habitacion'])
+                    ->with('reserva')
+                    ->get();
+                Log::info('TODAS las reservas para habitación ' . $hab['id_habitacion'], [
+                    'total' => $todasReservas->count(),
+                    'reservas' => $todasReservas->map(function($rh) {
+                        return [
+                            'id_reserva' => $rh->reserva->id_reserva ?? null,
+                            'id_estado_res' => $rh->reserva->id_estado_res ?? null,
+                            'estado_nombre' => $rh->reserva->estado->nombre ?? null,
+                            'fecha_llegada' => $rh->fecha_llegada,
+                            'fecha_salida' => $rh->fecha_salida,
+                        ];
+                    })
+                ]);
+
+                // disponibilidad - solo considerar reservas confirmadas o superiores
                 $choqueReserva = \App\Models\reserva\ReservaHabitacion::where('id_habitacion', $hab['id_habitacion'])
                     ->whereHas('reserva', function($q) {
                         $q->where('id_estado_res', '>=', 3); // Solo reservas confirmadas o superiores (no pendientes ni canceladas)
@@ -230,12 +247,13 @@ class ReservaController extends Controller
                         ->with('reserva')
                         ->get();
                     Log::info('Reservas que chocan para habitación ' . $hab['id_habitacion'], [
-                        'fecha_llegada' => $hab['fecha_llegada'],
-                        'fecha_salida' => $hab['fecha_salida'],
-                        'reservas' => $reservasChocan->map(function($rh) {
+                        'fecha_llegada_nueva' => $hab['fecha_llegada'],
+                        'fecha_salida_nueva' => $hab['fecha_salida'],
+                        'reservas_conflicto' => $reservasChocan->map(function($rh) {
                             return [
                                 'id_reserva' => $rh->reserva->id_reserva ?? null,
                                 'id_estado_res' => $rh->reserva->id_estado_res ?? null,
+                                'estado_nombre' => $rh->reserva->estado->nombre ?? null,
                                 'fecha_llegada' => $rh->fecha_llegada,
                                 'fecha_salida' => $rh->fecha_salida,
                             ];
