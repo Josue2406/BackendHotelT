@@ -16,14 +16,20 @@
 
 
 
-
 return [
-    'paths' => ['api/*', 'sanctum/csrf-cookie', 'login', 'logout'],
-    'allowed_methods' => ['*'],               // OPTIONS/GET/POST/PUT/PATCH/DELETE
-    'allowed_origins' => ['*'],               // Permite todos los orígenes
+    'paths' => ['api/*', 'sanctum/csrf-cookie'],
+    
+    'allowed_methods' => ['*'],
+    
+    'allowed_origins' => explode(',', env('CORS_ALLOWED_ORIGINS', 'http://localhost:3000')),
+    
     'allowed_origins_patterns' => [],
+    
     'allowed_headers' => ['*'],
-    'exposed_headers' => ['*'],
-    'max_age' => 86400,                       // Cache de preflight por 24 horas
-    'supports_credentials' => true,           // Permite envío de cookies/credenciales
+    
+    'exposed_headers' => [],
+    
+    'max_age' => 0,
+    
+    'supports_credentials' => true,
 ];
