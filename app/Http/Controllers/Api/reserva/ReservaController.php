@@ -210,8 +210,11 @@ class ReservaController extends Controller
 
             $totalReserva = 0;
             foreach ($habitaciones as $hab) {
-                // disponibilidad
+                // disponibilidad - solo considerar reservas confirmadas (id_estado_res = 1)
                 $choqueReserva = \App\Models\reserva\ReservaHabitacion::where('id_habitacion', $hab['id_habitacion'])
+                    ->whereHas('reserva', function($q) {
+                        $q->where('id_estado_res', 1); // Solo reservas confirmadas
+                    })
                     ->where('fecha_llegada', '<', $hab['fecha_salida'])
                     ->where('fecha_salida', '>', $hab['fecha_llegada'])
                     ->exists();
