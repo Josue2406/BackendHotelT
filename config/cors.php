@@ -17,18 +17,22 @@
 
 
 
-$originsEnv = env('CORS_ALLOWED_ORIGINS', '');
-$allowedOrigins = empty($originsEnv)
-    ? ['https://login-example-gamma.vercel.app', 'http://localhost:5173']
-    : array_values(array_filter(array_map('trim', explode(',', $originsEnv))));
-
 return [
     'paths' => ['api/*', 'sanctum/csrf-cookie'],
     'allowed_methods' => ['*'],
 
-    // Lee los orígenes permitidos desde .env con fallback
+    // Orígenes permitidos (hardcodeados para evitar problemas con .env)
     // IMPORTANTE: No se puede usar '*' con credentials:true
-    'allowed_origins' => $allowedOrigins,
+    'allowed_origins' => [
+        'https://login-example-gamma.vercel.app',
+        'https://una-hotel-system.vercel.app',
+        'https://test-login-tho.vercel.app',
+        'http://localhost:5173',
+        'http://localhost:5174',
+        'http://localhost:8000',
+        'http://127.0.0.1:5173',
+        'http://127.0.0.1:5174',
+    ],
 
     'allowed_origins_patterns' => [],
     'allowed_headers' => ['*'],
