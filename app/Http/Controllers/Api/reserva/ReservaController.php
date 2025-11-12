@@ -283,20 +283,6 @@ class ReservaController extends Controller
             // total de la reserva
             $reserva->update(['total_monto_reserva' => $totalReserva]);
 
-            // 4) Enviar el correo SOLO después de commit
-            DB::afterCommit(function () use ($reserva) {
-                $fresh = $reserva->fresh()->load([
-                    'cliente',
-                    'estado',
-                    'fuente',
-                    'habitaciones.habitacion.tipoHabitacion'
-                ]);
-
-                if ($fresh->cliente?->email) {
-                    $fresh->cliente->notify(new \App\Notifications\ReservaCreada($fresh));
-                }
-            });
-
             return $reserva->id_reserva;
         });
     } catch (\Exception $e) {
@@ -315,6 +301,25 @@ class ReservaController extends Controller
     // 5) Respuesta
     $reserva = Reserva::with(['cliente','estado','fuente','habitaciones.habitacion.tipoHabitacion'])
         ->findOrFail($reservaId);
+
+    // 6) Intentar enviar correo de confirmación (NO bloquear si falla)
+    try {
+        if ($reserva->cliente && $reserva->cliente->email) {
+            Log::info('Intentando enviar correo de reserva creada', [
+                'id_reserva' => $reserva->id_reserva,
+                'email' => $reserva->cliente->email
+            ]);
+            $reserva->cliente->notify(new \App\Notifications\ReservaCreada($reserva));
+            Log::info('Correo de reserva enviado exitosamente', ['id_reserva' => $reserva->id_reserva]);
+        }
+    } catch (\Exception $emailError) {
+        // Log el error pero NO fallar la respuesta
+        Log::warning('No se pudo enviar correo de confirmación de reserva', [
+            'id_reserva' => $reserva->id_reserva,
+            'error' => $emailError->getMessage(),
+            'email' => $reserva->cliente->email ?? 'N/A'
+        ]);
+    }
 
     return response()->json($reserva, 201);
 }
