@@ -55,7 +55,7 @@ class EstadiaResource extends JsonResource
 
             // Asignaciones (usando un resource alineado a Reliese; ver abajo)
             'asignaciones' => $asignaciones
-                ? AsignacionRelieseResource::collection($asignaciones)
+                ? AsignacionResource::collection($asignaciones)
                 : [],
 
             // Folio (si lo cargas; tu modelo tiene hasMany)

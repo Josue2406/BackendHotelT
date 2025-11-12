@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\Model;
  *
  * @package App\Models
  */
-class Pai extends Model
+class Pais extends Model
 {
 	protected $table = 'pais';
 	protected $primaryKey = 'id_pais';

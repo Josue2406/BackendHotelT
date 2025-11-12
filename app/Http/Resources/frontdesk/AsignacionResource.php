@@ -4,7 +4,7 @@ namespace App\Http\Resources\frontdesk;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class AsignacionRelieseResource extends JsonResource
+class AsignacionResource extends JsonResource
 {
     public function toArray($request): array
     {
