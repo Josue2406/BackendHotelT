@@ -210,24 +210,7 @@ class ReservaController extends Controller
 
             $totalReserva = 0;
             foreach ($habitaciones as $hab) {
-                // Primero, log todas las reservas de esta habitación sin filtro
-                $todasReservas = \App\Models\reserva\ReservaHabitacion::where('id_habitacion', $hab['id_habitacion'])
-                    ->with('reserva')
-                    ->get();
-                Log::info('TODAS las reservas para habitación ' . $hab['id_habitacion'], [
-                    'total' => $todasReservas->count(),
-                    'reservas' => $todasReservas->map(function($rh) {
-                        return [
-                            'id_reserva' => $rh->reserva->id_reserva ?? null,
-                            'id_estado_res' => $rh->reserva->id_estado_res ?? null,
-                            'estado_nombre' => $rh->reserva->estado->nombre ?? null,
-                            'fecha_llegada' => $rh->fecha_llegada,
-                            'fecha_salida' => $rh->fecha_salida,
-                        ];
-                    })
-                ]);
-
-                // disponibilidad - solo considerar reservas confirmadas o superiores
+                // Verificar disponibilidad - solo considerar reservas confirmadas o superiores
                 $choqueReserva = \App\Models\reserva\ReservaHabitacion::where('id_habitacion', $hab['id_habitacion'])
                     ->whereHas('reserva', function($q) {
                         $q->where('id_estado_res', '>=', 3); // Solo reservas confirmadas o superiores (no pendientes ni canceladas)
@@ -237,28 +220,6 @@ class ReservaController extends Controller
                     ->exists();
 
                 if ($choqueReserva) {
-                    // Log para debug
-                    $reservasChocan = \App\Models\reserva\ReservaHabitacion::where('id_habitacion', $hab['id_habitacion'])
-                        ->whereHas('reserva', function($q) {
-                            $q->where('id_estado_res', '>=', 3);
-                        })
-                        ->where('fecha_llegada', '<', $hab['fecha_salida'])
-                        ->where('fecha_salida', '>', $hab['fecha_llegada'])
-                        ->with('reserva')
-                        ->get();
-                    Log::info('Reservas que chocan para habitación ' . $hab['id_habitacion'], [
-                        'fecha_llegada_nueva' => $hab['fecha_llegada'],
-                        'fecha_salida_nueva' => $hab['fecha_salida'],
-                        'reservas_conflicto' => $reservasChocan->map(function($rh) {
-                            return [
-                                'id_reserva' => $rh->reserva->id_reserva ?? null,
-                                'id_estado_res' => $rh->reserva->id_estado_res ?? null,
-                                'estado_nombre' => $rh->reserva->estado->nombre ?? null,
-                                'fecha_llegada' => $rh->fecha_llegada,
-                                'fecha_salida' => $rh->fecha_salida,
-                            ];
-                        })
-                    ]);
                     throw new \Exception("La habitación {$hab['id_habitacion']} no está disponible en el rango especificado.");
                 }
 
@@ -302,23 +263,24 @@ class ReservaController extends Controller
     $reserva = Reserva::with(['cliente','estado','fuente','habitaciones.habitacion.tipoHabitacion'])
         ->findOrFail($reservaId);
 
-    // 6) Intentar enviar correo de confirmación (NO bloquear si falla)
-    try {
-        if ($reserva->cliente && $reserva->cliente->email) {
-            Log::info('Intentando enviar correo de reserva creada', [
-                'id_reserva' => $reserva->id_reserva,
-                'email' => $reserva->cliente->email
-            ]);
-            $reserva->cliente->notify(new \App\Notifications\ReservaCreada($reserva));
-            Log::info('Correo de reserva enviado exitosamente', ['id_reserva' => $reserva->id_reserva]);
-        }
-    } catch (\Exception $emailError) {
-        // Log el error pero NO fallar la respuesta
-        Log::warning('No se pudo enviar correo de confirmación de reserva', [
-            'id_reserva' => $reserva->id_reserva,
-            'error' => $emailError->getMessage(),
-            'email' => $reserva->cliente->email ?? 'N/A'
-        ]);
+    // 6) Encolar envío de correo para procesamiento en segundo plano (NO bloquea la respuesta)
+    if ($reserva->cliente && $reserva->cliente->email) {
+        // Dispatch to queue for background processing after response is sent
+        dispatch(function () use ($reservaId) {
+            try {
+                $reserva = Reserva::with(['cliente','estado','fuente','habitaciones.habitacion.tipoHabitacion'])
+                    ->find($reservaId);
+                
+                if ($reserva && $reserva->cliente && $reserva->cliente->email) {
+                    $reserva->cliente->notify(new \App\Notifications\ReservaCreada($reserva));
+                }
+            } catch (\Exception $e) {
+                Log::error('Error enviando correo de confirmación', [
+                    'id_reserva' => $reservaId,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        })->afterResponse();
     }
 
     return response()->json($reserva, 201);
