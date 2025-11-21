@@ -15,6 +15,8 @@ class UpdateHabitacionRequest extends FormRequest {
       'capacidad'          => 'sometimes|integer|min:1',
       'medida'             => 'sometimes|string|max:255',
       'descripcion'        => 'sometimes|string|max:255',
+      'precio_base'        => 'sometimes|nullable|numeric|min:0|max:9999999.99',
+      'moneda'             => 'sometimes|nullable|string|size:3',
     ];
   }
 }
