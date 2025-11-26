@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\house_keeping;
 
+use App\Events\NuevoMantenimientoAsignado;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\house_keeping\StoreMantenimientoRequest;
 use App\Http\Requests\house_keeping\UpdateMantenimientoRequest;
@@ -9,16 +10,23 @@ use App\Http\Resources\house_keeping\MantenimientoResource;
 use App\Models\house_keeping\Mantenimiento;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
-
+use App\Services\house_keeping\MantenimientoService;
 class MantenimientoController extends Controller
 {
+
+    protected MantenimientoService $service;
+
+public function __construct(MantenimientoService $service)
+{
+    $this->service = $service;
+}
     /** GET /mantenimientos */
     public function index(Request $request)
     {
         $perPage = (int) $request->input('per_page', 15);
 
         $query = Mantenimiento::with([
-            'habitacion',
+            'habitacion.tipo',   // 👈 importante
             'asignador',
             'reportante',
             'estadoHabitacion',
@@ -50,27 +58,42 @@ class MantenimientoController extends Controller
 
     /** POST /mantenimientos */
     public function store(StoreMantenimientoRequest $request)
-    {
-        // Solo datos validados (no permitimos que el cliente mande fecha_reporte ni id_usuario_reporta)
-        $data = $request->validated();
+{
+    // 1) Validar entrada
+    $data = $request->validated();
 
-        // Forzar usuario que reporta y fecha de reporte desde backend
-        $reporterId = optional(auth()->user())->id_usuario ?? auth()->id(); // ajusta según tu esquema
-        $data['id_usuario_reporta'] = $reporterId;
-        $data['fecha_reporte']      = Carbon::now();
+    // 2) Forzar usuario que reporta y fecha de reporte desde backend
+    $reporterId = optional(auth()->user())->id_usuario ?? auth()->id();
+    $data['id_usuario_reporta'] = $reporterId;
+    $data['fecha_reporte']      = Carbon::now();
 
-        $mtto = Mantenimiento::create($data);
+    // 3) Crear y registrar historial
+    $mtto = Mantenimiento::create($data);
+    $this->service->registrarCreacion($mtto);
 
-        return (new MantenimientoResource(
-            $mtto->load(['habitacion','asignador','reportante','estadoHabitacion'])
-        ))->response()->setStatusCode(201);
-    }
+    // 4) Cargar relaciones ANTES del payload del evento (incluye tipo de habitación)
+    $mtto->load(['habitacion.tipo','asignador','reportante','estadoHabitacion']);
+
+    // 5) Emitir evento de broadcast
+    event(new NuevoMantenimientoAsignado([
+        'id'         => $mtto->id_mantenimiento ?? $mtto->id ?? null,
+        'habitacion' => $mtto->habitacion->numero ?? 'N/A',
+        'asignado_a' => optional($mtto->asignador)->nombre ?? 'Sin asignar',
+        'estado'     => optional($mtto->estadoHabitacion)->nombre ?? 'Desconocido',
+        'fecha'      => $mtto->fecha_inicio ?? now()->toDateTimeString(),
+        'prioridad'  => $mtto->prioridad ?? null,
+    ]));
+
+    // 6) Respuesta API
+    return (new MantenimientoResource($mtto))
+        ->response()->setStatusCode(201);
+}
 
     /** GET /mantenimientos/{mantenimiento} */
     public function show(Mantenimiento $mantenimiento)
     {
         $mantenimiento->load([
-            'habitacion',
+            'habitacion.tipo',   // 👈
             'asignador',
             'reportante',
             'estadoHabitacion',
@@ -82,18 +105,71 @@ class MantenimientoController extends Controller
 
     /** PUT/PATCH /mantenimientos/{mantenimiento} */
     public function update(UpdateMantenimientoRequest $request, Mantenimiento $mantenimiento)
-    {
-        $data = $request->validated();
+{
+    $data = $request->validated();
 
-        // Blindaje: NO permitir editar fecha_reporte ni id_usuario_reporta
-        unset($data['fecha_reporte'], $data['id_usuario_reporta']);
+    // Campos que pueden limpiarse si no vienen en request
+    $nullableCampos = [
+        'fecha_final',
+        'notas',
+        'prioridad',
+    ];
 
-        $mantenimiento->update($data);
-
-        return new MantenimientoResource(
-            $mantenimiento->fresh()->load(['habitacion','asignador','reportante','estadoHabitacion'])
-        );
+    foreach ($nullableCampos as $campo) {
+        if (!array_key_exists($campo, $data)) {
+            $data[$campo] = null;
+        }
     }
+
+    // 🔒 Siempre setear quién y cuándo reporta al actualizar
+    $data['id_usuario_reporta'] = optional(auth()->user())->id_usuario ?? auth()->id();
+    $data['fecha_reporte'] = Carbon::now();
+
+    // Hacer update
+    $this->service->registrarActualizacion($mantenimiento, $data);
+    $mantenimiento->update($data);
+
+    // Recargar relaciones
+    $mantenimiento->refresh()->load([
+        'habitacion.tipo',
+        'asignador',        // quien recibe el mantenimiento
+        'reportante',       // quien lo reporta (última actualización)
+        'estadoHabitacion',
+    ]);
+
+    // 🔍 DEBUG: Ver qué llega en el request
+    \Log::info('🔍 UPDATE Mantenimiento - Request Data', [
+        'mantenimiento_id' => $mantenimiento->id_mantenimiento ?? $mantenimiento->id,
+        'request_has_id_usuario' => $request->has('id_usuario_asigna'),
+        'request_id_usuario' => $request->input('id_usuario_asigna'),
+        'mantenimiento_id_usuario_after_update' => $mantenimiento->id_usuario_asigna,
+        'request_all' => $request->all(),
+    ]);
+
+    // Evento si se incluye asignación en el request
+    if ($request->has('id_usuario_asigna') && $mantenimiento->id_usuario_asigna !== null) {
+        \Log::info('✅ DISPARANDO EVENTO NuevoMantenimientoAsignado', [
+            'habitacion' => $mantenimiento->habitacion->numero ?? 'N/A',
+            'asignado_a' => optional($mantenimiento->asignador)->nombre ?? 'Sin asignar',
+        ]);
+
+        event(new NuevoMantenimientoAsignado([
+            'id'         => $mantenimiento->id_mantenimiento ?? $mantenimiento->id,
+            'habitacion' => $mantenimiento->habitacion->numero ?? 'N/A',
+            'asignado_a' => optional($mantenimiento->asignador)->nombre ?? 'Sin asignar',
+            'estado'     => optional($mantenimiento->estadoHabitacion)->nombre ?? 'Desconocido',
+            'fecha'      => $mantenimiento->fecha_inicio ?? now()->toDateTimeString(),
+            'prioridad'  => $mantenimiento->prioridad,
+        ]));
+    } else {
+        \Log::info('❌ NO se cumple condición para disparar evento', [
+            'request_has' => $request->has('id_usuario_asigna'),
+            'id_usuario_value' => $mantenimiento->id_usuario_asigna,
+        ]);
+    }
+
+    return new MantenimientoResource($mantenimiento);
+}
 
     /** DELETE /mantenimientos/{mantenimiento} */
     public function destroy(Mantenimiento $mantenimiento)

@@ -1,75 +1,124 @@
 <?php
 
-/**
- * Created by Reliese Model.
- */
-
 namespace App\Models\cliente;
 
-use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable; // ← autenticable
+use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Notifications\Notifiable;
+use App\Notifications\ClienteResetPassword;
 
-/**
- * Class Cliente
- * 
- * @property int $id_cliente
- * @property string $nombre
- * @property string $apellido1
- * @property string|null $apellido2
- * @property string $email
- * @property string $telefono
- * @property int|null $id_tipo_doc
- * @property string|null $numero_doc
- * @property int|null $id_pais
- * @property string|null $direccion
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
- * 
- * @property Collection|Estadium[] $estadia_where_id_cliente_titular
- * @property Collection|Reserva[] $reservas_where_id_cliente
- *
- * @package App\Models
- */
-class Cliente extends Model
+class Cliente extends Authenticatable
 {
-	protected $table = 'clientes';
-	protected $primaryKey = 'id_cliente';
+    use HasApiTokens, Notifiable;
 
-	protected $casts = [
-		'id_tipo_doc' => 'int',
-		'id_pais' => 'int'
-	];
+    protected $table = 'clientes';
+    protected $primaryKey = 'id_cliente';
 
-	protected $fillable = [
-		'nombre',
-		'apellido1',
-		'apellido2',
-		'email',
-		'telefono',
-		'id_tipo_doc',
-		'numero_doc',
-		'nacionalidad',
-		// 'direccion'
-	];
 
-	public function id_pais()
-	{
-		return $this->belongsTo(Pai::class, 'id_pais');
-	}
+    // Campos que se pueden asignar en masa
+    protected $fillable = [
+        'nombre',
+        'apellido1',
+        'apellido2',
+        'email',
+        'password',
+        'telefono',
+        'id_tipo_doc',       // FK a tipos_documento (si lo usas)
+        'numero_doc',
+        'nacionalidad',      // almacenado en esta tabla
+        'direccion',
+        'fecha_nacimiento',
+        'genero',
+        'es_vip','notas_personal',   // ← IMPORTANTES
+    ];
 
-	public function id_tipo_doc()
-	{
-		return $this->belongsTo(TipoDoc::class, 'id_tipo_doc');
-	}
+    protected $hidden = ['password','remember_token'];
 
-	public function estadia_where_id_cliente_titular()
-	{
-		return $this->hasMany(Estadium::class, 'id_cliente_titular');
-	}
+    // Casts útiles
+    protected $casts = [
+        'id_tipo_doc'       => 'int',
+        'created_at'        => 'datetime',
+        'updated_at'        => 'datetime',
+        'fecha_nacimiento'  => 'date:Y-m-d',
+        'es_vip'            => 'boolean',
+    ];
 
-	public function reservas_where_id_cliente()
-	{
-		return $this->hasMany(Reserva::class, 'id_cliente');
-	}
+    /* -----------------------------
+     |  Accessors / Appended attrs
+     ----------------------------- */
+    protected $appends = ['nombre_completo'];
+
+    public function getNombreCompletoAttribute(): string
+    {
+        return trim(implode(' ', array_filter([
+            $this->nombre,
+            $this->apellido1,
+            $this->apellido2,
+        ])));
+    }
+
+    /* -------------
+     |  Scopes
+     ------------- */
+    /**
+     * Búsqueda rápida por documento, nombre, apellidos, email o teléfono.
+     */
+    public function scopeSearch($query, ?string $term)
+    {
+        if (!$term) return $query;
+
+        $like = "%{$term}%";
+        return $query->where(function ($q) use ($like) {
+            $q->where('numero_doc', 'like', $like)
+              ->orWhere('nombre', 'like', $like)
+              ->orWhere('apellido1', 'like', $like)
+              ->orWhere('apellido2', 'like', $like)
+              ->orWhere('email', 'like', $like)
+              ->orWhere('telefono', 'like', $like);
+        });
+    }
+
+    /* -----------------
+     |  Relaciones
+     ----------------- */
+    public function tipoDocumento()
+    {
+        // Ajusta el namespace/clase si tu modelo de catálogo tiene otro nombre
+        return $this->belongsTo(\App\Models\cliente\TipoDoc::class, 'id_tipo_doc', 'id_tipo_doc');
+    }
+
+    public function estadiasTitular()
+    {
+        return $this->hasMany(\App\Models\estadia\Estadia::class, 'id_cliente_titular', 'id_cliente');
+    }
+
+    public function reservas()
+    {
+        return $this->hasMany(\App\Models\reserva\Reserva::class, 'id_cliente', 'id_cliente');
+    }
+
+public function preferencias()
+{
+    return $this->hasOne(\App\Models\cliente\ClientePreferencias::class, 'id_cliente', 'id_cliente');
+}
+public function perfilViaje()
+{
+    return $this->hasOne(\App\Models\cliente\ClientePerfilViaje::class, 'id_cliente', 'id_cliente');
+}
+
+public function salud()
+{
+    return $this->hasOne(\App\Models\cliente\ClienteSalud::class, 'id_cliente', 'id_cliente');
+}
+
+public function contactoEmergencia() {
+    return $this->hasOne(\App\Models\cliente\ClienteContactoEmergencia::class, 'id_cliente', 'id_cliente');
+}
+
+public function sendPasswordResetNotification($token)
+    {
+        $this->notify(new ClienteResetPassword($token));
+    }
+
 }

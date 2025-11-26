@@ -1,12 +1,15 @@
 
 <?php
 use App\Http\Controllers\Api\frontdesk\FrontDeskController; //Ruta nueva
+use App\Http\Controllers\Api\PagoController;
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\usuario\RolController;
 use App\Http\Controllers\Api\usuario\UsuarioController;
 use App\Http\Controllers\Api\house_keeping\LimpiezaController;
 use App\Http\Controllers\Api\house_keeping\MantenimientoController;
+use App\Http\Controllers\Api\house_keeping\HistorialLimpiezaController;
+use App\Http\Controllers\Api\house_keeping\HistorialMantenimientoController;
 use App\Http\Controllers\Api\catalogo\EstadoHabitacionController;
 use App\Http\Controllers\Api\catalogo\TipoHabitacionController;
 use App\Http\Controllers\Api\catalogo\AmenidadController;
@@ -19,17 +22,42 @@ use App\Http\Controllers\Api\habitaciones\HabitacionController;
 use App\Http\Controllers\Api\habitaciones\BloqueoOperativoController;
 use App\Http\Controllers\Api\habitaciones\DisponibilidadController;
 use App\Http\Controllers\Api\reserva\{
-  ReservaController, ReservaHabitacionController, ReservaServicioController, ReservaPoliticaController
+  ReservaController, ReservaWebController, ReservaHabitacionController, ReservaServicioController, ReservaPoliticaController, ServicioController, ReporteController
 };
 
-use App\Http\Controllers\Api\frontdesk\WalkInsController;
+
+use App\Http\Controllers\Api\frontdesk\WalkinController;
 use App\Http\Controllers\Api\frontdesk\ReservasCheckinController;
 use App\Http\Controllers\Api\frontdesk\EstadoEstadiaController;
 use App\Http\Controllers\Api\frontdesk\EstadiasController;
+use App\Http\Controllers\Api\reserva\AvailabilityController;
+use App\Http\Controllers\Api\reserva\TemporadaController;
+use App\Http\Controllers\Api\reserva\TemporadaReglaController;
+
+
+use App\Http\Controllers\Api\clientes\ClienteWizardController;
+use App\Http\Controllers\Api\clientes\ClienteFullController;
+use App\Http\Controllers\Api\Auth\ForgotPasswordController;
+
 use App\Http\Controllers\Api\Auth\AuthController;
+
+use App\Http\Controllers\Api\Clientes\AuthClienteController;
+use App\Http\Controllers\Api\Clientes\PasswordResetClienteController;
+use App\Http\Controllers\Api\Huespedes\HuespedController;   // ← IMPORTANTE
+// use App\Http\Controllers\Api\Clientes\ClienteIntakeController; // ← si usarás perfil-completo
+
+// Ruta temporal para limpiar caché (ELIMINAR después de probar)
+Route::get('/clear-cache', function () {
+    \Illuminate\Support\Facades\Artisan::call('config:clear');
+    \Illuminate\Support\Facades\Artisan::call('cache:clear');
+    \Illuminate\Support\Facades\Artisan::call('route:clear');
+    return response()->json(['message' => 'Cache cleared successfully!']);
+});
 
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/register', [AuthController::class, 'register']);
+Route::post('/auth/forgot-password', [ForgotPasswordController::class, 'sendCode']);
+Route::post('/auth/reset-password', [ForgotPasswordController::class, 'resetPassword']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/auth/me', [AuthController::class, 'me']);
@@ -42,6 +70,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('limpiezas', LimpiezaController::class);
     Route::apiResource('mantenimientos', MantenimientoController::class);
 });
+Route::apiResource('historial-limpiezas', HistorialLimpiezaController::class)
+    ->only(['index', 'show']);
+
+// Historial por limpieza específica
+Route::get('limpiezas/{id}/historial', [HistorialLimpiezaController::class, 'porLimpieza']);
+
+Route::apiResource('historial-mantenimientos', HistorialMantenimientoController::class)
+    ->only(['index', 'show']);
+
+Route::get('mantenimientos/{id}/historial', [HistorialMantenimientoController::class, 'porMantenimiento']);
+
 Route::apiResource('roles', RolController::class);
 Route::apiResource('usuarios', UsuarioController::class);
 Route::apiResource('estados-habitacion', EstadoHabitacionController::class);
@@ -51,40 +90,113 @@ Route::apiResource('habitacion-amenidad',HabitacionAmenidadController::class)->o
 Route::apiResource('fuentes', FuenteController::class);
 Route::apiResource('tipos-doc', TipoDocController::class);
 Route::apiResource('estados-reserva', EstadoReservaController::class);
-Route::apiResource('clientes', ClienteController::class);
+//Route::apiResource('clientes', ClienteController::class);
 Route::apiResource('habitaciones', HabitacionController::class)->only(['index','show','store','update']);
 Route::apiResource('bloqueos', BloqueoOperativoController::class)->only(['index','show','store','destroy']);
 
 Route::get('disponibilidad', DisponibilidadController::class);
+Route::get('availability/search', [AvailabilityController::class, 'search']);
 
+// ========== RESERVAS ADMINISTRATIVAS (Requieren token de Usuario) ==========
+Route::middleware('auth:sanctum')->group(function () {
+    // Búsqueda por Código de Reserva
+    Route::get('reservas/buscar', [ReservaController::class, 'buscarPorCodigo']);
+    Route::get('reservas/codigos/estadisticas', [ReservaController::class, 'estadisticasCodigos']);
 
-// CRUD reserva
-Route::apiResource('reservas', ReservaController::class);
+    // CRUD reserva (Usuarios administrativos: recepción, staff)
+    Route::get('reservas', [ReservaController::class, 'index']);
+    Route::post('reservas', [ReservaController::class, 'store']);
+    Route::get('reservas/{reserva}', [ReservaController::class, 'show']);
+    Route::put('reservas/{reserva}', [ReservaController::class, 'update']);
+    Route::patch('reservas/{reserva}', [ReservaController::class, 'update']);
+    Route::delete('reservas/{reserva}', [ReservaController::class, 'destroy']);
 
-// Habitaciones por reserva
-Route::get('reservas/{reserva}/habitaciones',      [ReservaHabitacionController::class, 'index']);
-Route::post('reservas/{reserva}/habitaciones',     [ReservaHabitacionController::class, 'store']);
-Route::delete('reservas/{reserva}/habitaciones/{id}', [ReservaHabitacionController::class, 'destroy']);
+    // Habitaciones por reserva
+    Route::get('reservas/{reserva}/habitaciones',                  [ReservaHabitacionController::class, 'index']);
+    Route::post('reservas/{reserva}/habitaciones',                 [ReservaHabitacionController::class, 'store']);
+    Route::put('reservas/{reserva}/habitaciones/{habitacion_id}',  [ReservaHabitacionController::class, 'update'])->where('habitacion_id', '[0-9]+');
+    Route::delete('reservas/{reserva}/habitaciones/{habitacion_id}', [ReservaHabitacionController::class, 'destroy'])->where('habitacion_id', '[0-9]+');
 
-// Servicios por reserva
-Route::get('reservas/{reserva}/servicios',         [ReservaServicioController::class, 'index']);
-Route::post('reservas/{reserva}/servicios',        [ReservaServicioController::class, 'store']);
-Route::put('reservas/{reserva}/servicios/{id}',    [ReservaServicioController::class, 'update']);
-Route::delete('reservas/{reserva}/servicios/{id}', [ReservaServicioController::class, 'destroy']);
+    // Servicios por reserva
+    Route::get('reservas/{reserva}/servicios',         [ReservaServicioController::class, 'index']);
+    Route::post('reservas/{reserva}/servicios',        [ReservaServicioController::class, 'store']);
+    Route::put('reservas/{reserva}/servicios/{id}',    [ReservaServicioController::class, 'update']);
+    Route::delete('reservas/{reserva}/servicios/{id}', [ReservaServicioController::class, 'destroy']);
 
-// Políticas por reserva
-Route::get('reservas/{reserva}/politicas',         [ReservaPoliticaController::class, 'index']);
-Route::post('reservas/{reserva}/politicas',        [ReservaPoliticaController::class, 'store']);
-Route::delete('reservas/{reserva}/politicas/{id}', [ReservaPoliticaController::class, 'destroy']);
+    // Políticas por reserva
+    Route::get('reservas/{reserva}/politicas',         [ReservaPoliticaController::class, 'index']);
+    Route::post('reservas/{reserva}/politicas',        [ReservaPoliticaController::class, 'store']);
+    Route::delete('reservas/{reserva}/politicas/{id}', [ReservaPoliticaController::class, 'destroy']);
 
-// Acciones de reserva
-Route::post('reservas/{reserva}/confirmar', [ReservaController::class, 'confirmar']);
-Route::post('reservas/{reserva}/cancelar',  [ReservaController::class, 'cancelar']);
-Route::post('reservas/{reserva}/cotizar',   [ReservaController::class, 'cotizar']);
-Route::post('reservas/{reserva}/no-show',   [ReservaController::class, 'noShow']);
-Route::post('reservas/{reserva}/checkin',   [ReservaController::class, 'generarEstadia']);
+    // Acciones de reserva
+    Route::post('reservas/{reserva}/confirmar', [ReservaController::class, 'confirmar']);
+    Route::post('reservas/{reserva}/cancelar',  [ReservaController::class, 'cancelar']);
+    Route::post('reservas/{reserva}/cotizar',   [ReservaController::class, 'cotizar']);
+    Route::post('reservas/{reserva}/no-show',   [ReservaController::class, 'noShow']);
+    Route::post('reservas/{reserva}/checkin',   [ReservaController::class, 'generarEstadia']);
+    Route::post('reservas/{reserva}/check-in',  [ReservaController::class, 'checkIn']);
+    Route::put('reservas/{reserva}/estado',     [ReservaController::class, 'cambiarEstado']);
+    Route::post('reservas/{reserva}/realizar-checkin',  [ReservaController::class, 'realizarCheckIn']);
+    Route::post('reservas/{reserva}/realizar-checkout', [ReservaController::class, 'realizarCheckOut']);
 
+    // Sistema de Pagos
+    Route::post('reservas/{reserva}/pagos', [ReservaController::class, 'procesarPago']);
+    Route::get('reservas/{reserva}/pagos', [ReservaController::class, 'listarPagos']);
 
+    // Sistema de Cancelación con Políticas
+    Route::get('reservas/{reserva}/cancelacion/preview', [ReservaController::class, 'previewCancelacion']);
+    Route::post('reservas/{reserva}/cancelar-con-politica', [ReservaController::class, 'cancelarConPolitica']);
+
+    // Sistema de Extensión de Estadía
+    Route::post('reservas/{reserva}/extender', [ReservaController::class, 'extenderEstadia']);
+    Route::post('reservas/{reserva}/extender/confirmar', [ReservaController::class, 'confirmarExtensionCambioHabitacion']);
+
+    // Sistema de Modificación de Reservas
+    Route::post('reservas/{reserva}/modificar/cambiar-habitacion', [ReservaController::class, 'cambiarHabitacion']);
+    Route::post('reservas/{reserva}/modificar/cambiar-fechas', [ReservaController::class, 'modificarFechas']);
+    Route::post('reservas/{reserva}/modificar/reducir-estadia', [ReservaController::class, 'reducirEstadia']);
+
+    // Sistema de Reportes y Estadísticas
+    Route::prefix('reservas/reportes')->group(function () {
+        Route::get('kpis', [ReporteController::class, 'kpis']);
+        Route::get('series-temporales', [ReporteController::class, 'seriesTemporales']);
+        Route::get('distribuciones', [ReporteController::class, 'distribuciones']);
+        Route::get('export/pdf', [ReporteController::class, 'exportPdf']);
+    });
+});
+
+// ========== RESERVAS WEB (Requieren token de Cliente) ==========
+Route::middleware('auth:sanctum')->prefix('reservas-web')->group(function () {
+    // CRUD de reservas para clientes
+    Route::get('/', [ReservaWebController::class, 'index']);           // Listar reservas del cliente
+    Route::post('/', [ReservaWebController::class, 'store']);          // Crear nueva reserva
+    Route::get('{reserva}', [ReservaWebController::class, 'show']);    // Ver detalle de reserva
+    Route::put('{reserva}', [ReservaWebController::class, 'update']);  // Modificar reserva
+
+    // Acciones sobre reservas
+    Route::post('{reserva}/cancelar', [ReservaWebController::class, 'cancelar']); // Cancelar reserva
+});
+
+// ========== ENDPOINTS DE PAGOS - HOTEL LANAKU ==========
+// Procesamiento de pagos con múltiples divisas y conversión automática
+Route::post('pagos/inicial', [PagoController::class, 'pagoInicial']);          // Pago inicial 30%
+Route::post('pagos/restante', [PagoController::class, 'pagoRestante']);        // Pago saldo restante
+Route::post('pagos/completo', [PagoController::class, 'pagoCompleto']);        // Pago completo 100%
+
+// Endpoints auxiliares para el sistema de pagos
+Route::get('pagos/divisas-principales', [PagoController::class, 'divisasPrincipales']);  // USD, CRC, EUR
+Route::get('pagos/metodos', [PagoController::class, 'metodosPago']);                    // Métodos activos
+Route::get('pagos/tipo-cambio/{moneda}', [PagoController::class, 'tipoCambio']);        // Tipo de cambio actual
+Route::post('pagos/calcular-precio', [PagoController::class, 'calcularPrecio']);        // Calcular en 3 divisas
+
+// Sistema de Monedas y Tipos de Cambio
+Route::get('monedas/soportadas', [ReservaController::class, 'monedasSoportadas']);
+Route::get('monedas/tipos-cambio', [ReservaController::class, 'tiposDeCambio']);
+Route::get('monedas/convertir', [ReservaController::class, 'convertirMoneda']);
+
+Route::apiResource('temporadas', TemporadaController::class);
+Route::apiResource('temporada-reglas', TemporadaReglaController::class);
+Route::apiResource('servicios', ServicioController::class);
 
 
 
@@ -109,9 +221,13 @@ Ajuste de fechas de la estadía
 Check-out (crea evento)
 */
 
+
+/*
 Route::prefix('frontdesk')->group(function () {
     // Walk-in
-    Route::post('/walkin', [WalkInsController::class, 'store']);
+    Route::post('/walkin', [WalkInController::class, 'store']);
+
+//Route::post('/frontdesk/walkin', [WalkinController::class, 'store']);
 
     // Check-in desde reserva
     Route::post('/reserva/{reserva}/checkin', [ReservasCheckinController::class, 'store']);
@@ -132,15 +248,171 @@ Route::prefix('frontdesk')->group(function () {
     Route::post('/estado-estadia', [EstadoEstadiaController::class, 'store']);
 
 
+use App\Http\Controllers\Api\frontdesk\EstadiaController;
 
+Route::get('/frontdesk/estadia/{id}', [EstadiaController::class, 'show']);
     //Estadias
-     Route::get('/estadia/{estadia}', [EstadiasController::class, 'show']);   // detalle
+    // Route::get('/estadia/{estadia}', [EstadiasController::class, 'show']);   // detalle
   Route::get('/estadias',          [EstadiasController::class, 'index']);  // listado/paginado
 
 
   Route::post('/estadia/{estadia}/room-move', [EstadiasController::class, 'roomMove']);
   Route::patch('/estadia/{estadia}/fechas',    [EstadiasController::class, 'updateFechas']);
   Route::post('/estadia/{estadia}/checkout',  [EstadiasController::class, 'checkout']);
-  Route::get('/estadia/{estadia}',            [EstadiasController::class, 'show']);
+  //Route::get('/estadia/{estadia}',            [EstadiasController::class, 'show']);
   Route::get('/estadias',                     [EstadiasController::class, 'index']);
+}); */
+
+
+
+Route::prefix('frontdesk')->group(function () {
+
+
+      Route::get('/estadia/by-reserva/{codigo}', [\App\Http\Controllers\Api\frontdesk\EstadiaController::class, 'showByReserva']);
+    // Walk-in
+    Route::post('/walkin', [WalkInController::class, 'store']);
+
+    // Check-in desde reserva
+    Route::post('/reserva/{reserva}/checkin', [ReservasCheckinController::class, 'store']);
+
+    // Estado de estadía
+    Route::get('/estado-estadia',  [EstadoEstadiaController::class, 'index']);
+    Route::post('/estado-estadia', [EstadoEstadiaController::class, 'store']);
+
+    // ✅ Estadia (detalle)
+     Route::get('/estadia/{id}', [\App\Http\Controllers\Api\frontdesk\EstadiaController::class, 'show']);
+
+    // ✅ Estadías (listado general)
+    Route::get('/estadias', [EstadiasController::class, 'index']);
+
+    // ✅ Movimientos / Fechas / Checkout
+    Route::post('/estadia/{estadia}/room-move', [EstadiasController::class, 'roomMove']);
+    Route::patch('/estadia/{estadia}/fechas', [EstadiasController::class, 'updateFechas']);
+    Route::post('/estadia/{estadia}/checkout', [EstadiasController::class, 'checkout']);
+});
+
+
+
+Route::prefix('clientes')->group(function () {
+    Route::get('/',            [ClienteController::class, 'index']);
+    Route::post('/',           [ClienteController::class, 'store']);
+    Route::get('{cliente}',    [ClienteController::class, 'show']);
+    Route::patch('{cliente}',    [ClienteController::class, 'update']);
+    Route::delete('{cliente}', [ClienteController::class, 'destroy']);
+
+    Route::get('por-doc/{numero_doc}',    [ClienteController::class, 'findByDocumento']);
+    Route::get('exists-doc/{numero_doc}', [ClienteController::class, 'existsByDocumento']);
+    Route::post('upsert-por-doc',         [ClienteController::class, 'upsertByDocumento']);
+});
+
+
+Route::prefix('clientes/{cliente}/wizard')
+    ->name('clientes.wizard.')
+    ->group(function () {
+        Route::patch('habitacion',   [ClienteWizardController::class, 'habitacion'])->name('habitacion');
+        Route::patch('perfil-viaje', [ClienteWizardController::class, 'perfilViaje'])->name('perfil_viaje');
+        Route::patch('salud',        [ClienteWizardController::class, 'salud'])->name('salud');
+        Route::patch('emergencia',   [ClienteWizardController::class, 'emergencia'])->name('emergencia');
+        Route::get('progreso',       [ClienteWizardController::class, 'progreso'])->name('progreso');
+    });
+
+/*
+Route::prefix('clientes/full')
+    ->name('clientes.full.')
+    ->group(function () {
+        Route::post('/', [ClienteFullController::class, 'store'])->name('store');
+        Route::put('{cliente}', [ClienteFullController::class, 'update'])->name('update');
+ });
+        */
+        Route::prefix('clientes/full')
+        ->group(function () {
+    Route::post('/', [ClienteFullController::class, 'store']);   // idempotente
+    Route::put('{cliente}', [ClienteFullController::class, 'update']); // si lo usas
+});
+
+        // Agrega más rutas si es necesario (update, show, etc.)
+//Route::post('clientes/full', [ClienteFullController::class, 'store']);
+
+
+use App\Http\Controllers\Api\folio\FolioResumenController;
+use App\Http\Controllers\Api\folio\FolioDistribucionController;
+use App\Http\Controllers\Api\folio\FolioPagosController;
+use App\Http\Controllers\Api\folio\FolioCerrarController;
+use App\Http\Controllers\Api\folio\FolioHistorialController;
+use App\Http\Controllers\Api\folio\FolioHistorialExportController;
+
+Route::prefix('folios')->group(function () {
+    Route::get('{idFolio}/resumen', [FolioResumenController::class, 'show']);
+    Route::post('{folioId}/distribuir', [FolioDistribucionController::class, 'distribuir']);
+    Route::post('{folioId}/pagos', [FolioPagosController::class, 'store']);
+    Route::post('{idFolio}/cerrar', [FolioCerrarController::class, 'store']);
+    Route::get('{idFolio}/historial', [FolioHistorialController::class, 'index']);
+    Route::get('{idFolio}/historial/export', [FolioHistorialExportController::class, 'exportCsv']);
+});
+
+
+
+//-------------------------------------------------------------------------------------------------
+
+use App\Http\Controllers\Api\frontdesk\ClientesLookupController;
+
+Route::get('/frontdesk/clientes/_lookup', [ClientesLookupController::class, 'show'])
+    ->name('frontdesk.clientes.lookup');
+
+
+
+// routes/api.php
+
+
+
+Route::prefix('clientes')->group(function () {
+    // Registro + Login
+    Route::post('auth/register', [AuthClienteController::class, 'register']);
+   /* Route::post('auth/login',    [AuthClienteController::class, 'login'])
+    ->middleware('throttle:login');
+    */
+
+    Route::post('auth/login', [AuthClienteController::class, 'login'])
+    ->middleware('throttle:5,1'); // 5 intentos x 1 minuto por IP
+
+    
+// Crear huésped (independiente del cliente)
+Route::post('huespedes', [HuespedController::class, 'store']);
+
+// Login con draft (ya lo tienes)
+    //Route::post('clientes/auth/login', [AuthClienteController::class, 'login']);
+
+    // Password reset (enviar correo y resetear)
+    Route::post('password/forgot', [PasswordResetClienteController::class, 'sendResetLink']);
+    Route::post('password/reset',  [PasswordResetClienteController::class, 'resetPassword']);
+
+    // Rutas protegidas por token
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('auth/me',     [AuthClienteController::class, 'me']);
+        Route::post('auth/logout',[AuthClienteController::class, 'logout']);
+        // aquí puedes añadir más endpoints del cliente autenticado
+
+
+    /* routes/api.php
+Route::middleware('auth:sanctum')->prefix('clientes')->group(function () {
+    Route::post('full', [ClienteFullController::class, 'store']); // ahora “store” = update del autenticado
+});*/
+Route::middleware('auth:sanctum')->post('clientes/full', [ClienteFullController::class,'store']);
+
+
+      
+    });
+});
+
+
+Route::prefix('clientes')->group(function () {
+
+    // Crear huésped (independiente del cliente)
+    Route::post('huespedes', [HuespedController::class, 'store']);
+
+    // (Opcional) Perfil completo 6 secciones en un solo POST
+    // Route::post('perfil-completo', [ClienteIntakeController::class, 'submit'])
+    //     ->middleware('auth:sanctum'); // recomendado
+
+
 });

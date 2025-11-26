@@ -44,82 +44,41 @@ use App\Models\check_out\Folio;                     // <-- AJUSTAR
  */
 class Estadia extends Model
 {
-	protected $table = 'estadia';
-	protected $primaryKey = 'id_estadia';
+	 protected $table = 'estadia';
+    protected $primaryKey = 'id_estadia';
 
-	protected $casts = [
-		'id_reserva' => 'int',
-		'id_cliente_titular' => 'int',
-		'id_fuente' => 'int',
-		'fecha_llegada' => 'datetime',
-		'fecha_salida' => 'datetime',
-		'adultos' => 'int',
-		'ninos' => 'int',
-		'bebes' => 'int',
-		'id_estado_estadia' => 'int'
-	];
+    protected $casts = [
+        'id_reserva' => 'int',
+        'id_cliente_titular' => 'int',
+        'id_fuente' => 'int',
+        'fecha_llegada' => 'datetime',
+        'fecha_salida' => 'datetime',
+        'adultos' => 'int',
+        'ninos' => 'int',
+        'bebes' => 'int',
+        'id_estado_estadia' => 'int'
+    ];
 
-	protected $fillable = [
-		'id_reserva',
-		'id_cliente_titular',
-		'id_fuente',
-		'fecha_llegada',
-		'fecha_salida',
-		'adultos',
-		'ninos',
-		'bebes',
-		'id_estado_estadia'
-	];
-/*
-	public function id_cliente_titular()
-	{
-		return $this->belongsTo(Cliente::class, 'id_cliente_titular');
-	}
+    protected $fillable = [
+        'id_reserva',
+        'id_cliente_titular',
+        'id_fuente',
+        'fecha_llegada',
+        'fecha_salida',
+        'adultos',
+        'ninos',
+        'bebes',
+        'id_estado_estadia'
+    ];
 
-	public function id_estado_estadia()
-	{
-		return $this->belongsTo(EstadoEstadia::class, 'id_estado_estadia');
-	}
-
-	public function id_fuente()
-	{
-		return $this->belongsTo(Fuente::class, 'id_fuente');
-	}
-
-	public function id_reserva()
-	{
-		return $this->belongsTo(Reserva::class, 'id_reserva');
-	}
-
-	public function asignacion_habitacions_where_id_estadia()
-	{
-		return $this->hasMany(AsignacionHabitacion::class, 'id_estadia');
-	}
-
-	public function folios_where_id_estadia()
-	{
-		return $this->hasMany(Folio::class, 'id_estadia');
-	}
-}
-
-*/
- /** ---------------- Relaciones belongsTo (nombres semánticos) ---------------- */
-
- public function estadoEstadia()
-    {
-        // Modelo de catálogo/estado de la estadía
-        return $this->belongsTo(\App\Models\estadia\EstadoEstadia::class, 'id_estado_estadia', 'id_estado_estadia');
-    }
-	
-    public function clienteTitular()
-    {
-        return $this->belongsTo(Cliente::class, 'id_cliente_titular', 'id_cliente');
-        // ajusta 'id_cliente' si tu PK se llama diferente
-    }
-
+    /** ---------------- Relaciones belongsTo ---------------- */
     public function estado()
     {
         return $this->belongsTo(EstadoEstadia::class, 'id_estado_estadia', 'id_estado_estadia');
+    }
+    public function clienteTitular()
+    {
+        return $this->belongsTo(Cliente::class, 'id_cliente_titular', 'id_cliente');
     }
 
     public function fuente()
@@ -132,33 +91,45 @@ class Estadia extends Model
         return $this->belongsTo(Reserva::class, 'id_reserva', 'id_reserva');
     }
 
-    /** ---------------- Relaciones hasMany/hasOne (nombres legibles) -------------- */
-
+    /** ---------------- Relaciones hasMany / hasOne ---------------- */
     public function asignaciones()
     {
         return $this->hasMany(AsignacionHabitacion::class, 'id_estadia', 'id_estadia');
     }
 
-    public function folios()
-    {
-        return $this->hasMany(Folio::class, 'id_estadia', 'id_estadia');
-    }
-
-	
-    /** ---------------- Helpers útiles ------------------------------------------- */
-
-    // Última asignación por fecha_asignacion
     public function ultimaAsignacion()
     {
         return $this->hasOne(AsignacionHabitacion::class, 'id_estadia', 'id_estadia')->latestOfMany('fecha_asignacion');
     }
 
-    // Asignación activa (sin fecha de desasignación)
     public function asignacionActiva()
     {
-        return $this->hasOne(AsignacionHabitacion::class, 'id_estadia', 'id_estadia')
-            ->whereNull('fecha_desasignacion');
+        return $this->hasOne(AsignacionHabitacion::class, 'id_estadia', 'id_estadia')->whereNull('fecha_desasignacion');
     }
+
+    public function clientes()
+    {
+        return $this->hasMany(EstadiaCliente::class, 'id_estadia', 'id_estadia');
+    }
+
+    // ✅ Relación plural: por compatibilidad con controladores que usan 'folios'
+public function folios()
+{
+    return $this->hasMany(\App\Models\check_out\Folio::class, 'id_estadia', 'id_estadia');
+}
+
+// ✅ Relación singular: algunos controladores pueden usar 'folio' para obtener el principal
+public function folio()
+{
+    return $this->hasOne(\App\Models\check_out\Folio::class, 'id_estadia', 'id_estadia');
+}
+
+	public function estadoEstadia()
+{
+    // Alias por compatibilidad
+    return $this->belongsTo(\App\Models\estadia\EstadoEstadia::class, 'id_estado_estadia', 'id_estado_estadia');
+}
+
 }
 
 

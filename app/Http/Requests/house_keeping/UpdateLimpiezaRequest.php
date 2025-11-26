@@ -16,15 +16,10 @@ class UpdateLimpiezaRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'nombre'              => ['sometimes', 'string', 'max:100'],
-
-            'descripcion'         => ['sometimes', 'nullable', 'string', 'max:500'],
             'notas'               => ['sometimes', 'nullable', 'string', 'max:500'],
             'prioridad'           => ['sometimes', 'nullable', Rule::in(['baja','media','alta','urgente'])],
-
             'fecha_inicio'        => ['sometimes', 'date'],
             'fecha_final'         => ['sometimes', 'nullable', 'date', 'after_or_equal:fecha_inicio'],
-            //'fecha_reporte'       => ['sometimes', 'date'],
 
             // Claves foráneas
             'id_habitacion'       => ['sometimes', 'nullable', 'integer', 'exists:habitaciones,id_habitacion'],
