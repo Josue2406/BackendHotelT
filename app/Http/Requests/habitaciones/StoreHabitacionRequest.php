@@ -14,6 +14,8 @@ class StoreHabitacionRequest extends FormRequest {
       'capacidad'          => 'required|integer|min:1',
       'medida'             => 'required|string|max:255',
       'descripcion'        => 'required|string|max:255',
+      'precio_base'        => 'nullable|numeric|min:0|max:9999999.99',
+      'moneda'             => 'nullable|string|size:3', 
     ];
   }
 }

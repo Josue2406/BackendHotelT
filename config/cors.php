@@ -13,19 +13,25 @@
 //     'max_age' => 86400,
 //     'supports_credentials' => (bool) env('CORS_SUPPORTS_CREDENTIALS', false),
 // ];
+
+
+
 return [
     'paths' => ['api/*', 'sanctum/csrf-cookie'],
-    'allowed_methods' => ['*'],               // OPTIONS/GET/POST/etc
-    'allowed_origins' => [
-        'http://localhost:5174',
-        'http://127.0.0.1:5174',
-        'http://localhost:5173',
-        'http://127.0.0.1:5173',
-        'https://una-hotel-system.vercel.app/',
-    ],
+    
+    'allowed_methods' => ['*'],
+
+    // Lee los orígenes permitidos desde .env
+    // IMPORTANTE: No se puede usar '*' con credentials:true
+    'allowed_origins' => ['https://lanaku-hotel.onrender.com', 'https://una-hotel-system.vercel.app'],
+
     'allowed_origins_patterns' => [],
+    
     'allowed_headers' => ['*'],
+    
     'exposed_headers' => [],
+    
     'max_age' => 0,
-    'supports_credentials' => false,         // déjalo en false si NO envías cookies
+    
+    'supports_credentials' => true,
 ];

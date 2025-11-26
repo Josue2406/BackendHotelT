@@ -36,38 +36,62 @@ class FolioResumenController extends Controller
             return response()->json(['message' => 'No hay datos en el resumen del folio.'], 404);
         }
 
-        // 🔹 Detalle por persona
-        $asignado = DB::table('vw_folio_por_persona')
-            ->where('id_folio', $idFolio)
+        // 🔹 Detalle por persona con información del cliente
+        // Obtener TODOS los clientes de la estadía (aunque no tengan cargos asignados)
+        $clientesEstadia = DB::table('estadia_cliente as ec')
+            ->join('clientes as c', 'ec.id_cliente', '=', 'c.id_cliente')
+            ->join('folio as f', 'ec.id_estadia', '=', 'f.id_estadia')
+            ->where('f.id_folio', $idFolio)
+            ->select(
+                'c.id_cliente',
+                'c.nombre',
+                'c.apellido1',
+                'c.apellido2',
+                'c.email',
+                'c.numero_doc as documento'
+            )
+            ->get();
+
+        // Obtener cargos asignados por persona
+        $asignado = DB::table('vw_folio_por_persona as vfp')
+            ->where('vfp.id_folio', $idFolio)
             ->get();
 
         $pagos = DB::table('vw_pagos_por_persona')
             ->where('id_folio', $idFolio)
             ->get();
 
-        // 🔹 Combinar asignaciones y pagos
+        // 🔹 Combinar datos: incluir TODOS los clientes, con o sin cargos
         $byCliente = [];
-        foreach ($asignado as $a) {
-            $byCliente[$a->id_cliente] = [
-                'id_cliente' => (int) $a->id_cliente,
-                'asignado'   => (float) $a->asignado,
+        
+        // Primero, agregar todos los clientes de la estadía
+        foreach ($clientesEstadia as $cliente) {
+            $nombreCompleto = trim(($cliente->nombre ?? '') . ' ' . ($cliente->apellido1 ?? '') . ' ' . ($cliente->apellido2 ?? ''));
+            $byCliente[$cliente->id_cliente] = [
+                'id_cliente' => (int) $cliente->id_cliente,
+                'nombre'     => $nombreCompleto ?: "Cliente #{$cliente->id_cliente}",
+                'email'      => $cliente->email,
+                'documento'  => $cliente->documento,
+                'asignado'   => 0.0,
                 'pagos'      => 0.0,
-                'saldo'      => (float) $a->asignado,
+                'saldo'      => 0.0,
             ];
+        }
+        
+        // Luego, agregar los montos asignados
+        foreach ($asignado as $a) {
+            if (isset($byCliente[$a->id_cliente])) {
+                $byCliente[$a->id_cliente]['asignado'] = (float) $a->asignado;
+                $byCliente[$a->id_cliente]['saldo'] = (float) $a->asignado;
+            }
         }
 
         foreach ($pagos as $p) {
-            if (!isset($byCliente[$p->id_cliente])) {
-                $byCliente[$p->id_cliente] = [
-                    'id_cliente' => (int) $p->id_cliente,
-                    'asignado'   => 0.0,
-                    'pagos'      => 0.0,
-                    'saldo'      => 0.0,
-                ];
+            if (isset($byCliente[$p->id_cliente])) {
+                $byCliente[$p->id_cliente]['pagos'] += (float) $p->pagos;
+                $byCliente[$p->id_cliente]['saldo'] =
+                    $byCliente[$p->id_cliente]['asignado'] - $byCliente[$p->id_cliente]['pagos'];
             }
-            $byCliente[$p->id_cliente]['pagos'] += (float) $p->pagos;
-            $byCliente[$p->id_cliente]['saldo'] =
-                $byCliente[$p->id_cliente]['asignado'] - $byCliente[$p->id_cliente]['pagos'];
         }
 
         // ============================

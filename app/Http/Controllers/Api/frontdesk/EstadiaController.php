@@ -174,6 +174,14 @@ public function showByReserva($codigo)
             'created_at' => $estadia->created_at,
             'updated_at' => $estadia->updated_at,
             'estado' => $estadia->estado,
+            'cliente_titular' => $estadia->clienteTitular ? [
+                'id_cliente' => $estadia->clienteTitular->id_cliente,
+                'nombre' => $estadia->clienteTitular->nombre,
+                'apellido1' => $estadia->clienteTitular->apellido1,
+                'apellido2' => $estadia->clienteTitular->apellido2,
+                'email' => $estadia->clienteTitular->email,
+                'telefono' => $estadia->clienteTitular->telefono,
+            ] : null,
         ],
         'acompanantes' => $acompanantes,
         'asignacion' => $asignacion ? [
