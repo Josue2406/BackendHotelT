@@ -111,8 +111,7 @@ class FolioPagosController extends Controller
                     'id_folio'   => $folioId,
                     'id_cliente' => $data['id_cliente'] ?? null,
                     'monto'      => $monto,
-                    'resultado'  => $data['resultado'] ?? 'OK',
-                    'metodo'     => $data['metodo'] ?? 'Efectivo',
+                    'resultado'  => $data['resultado'] ?? 'aprobado',
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
@@ -120,12 +119,19 @@ class FolioPagosController extends Controller
                 DB::table('transaccion_pago')->insert($pagoRow);
 
                 // c) Registrar línea contable en folio_linea
+                $metodoTexto = $data['metodo'] ?? 'Efectivo';
+                $descripcionPago = $data['id_cliente']
+                    ? "Pago ({$metodoTexto}) - Cliente #{$data['id_cliente']}"
+                    : "Pago ({$metodoTexto}) - General";
+                
+                if (!empty($data['nota'])) {
+                    $descripcionPago .= " - " . $data['nota'];
+                }
+
                 DB::table('folio_linea')->insert([
                     'id_folio'    => $folioId,
                     'id_cliente'  => $data['id_cliente'] ?? null,
-                    'descripcion' => $data['id_cliente']
-                        ? 'Pago aplicado al cliente ' . $data['id_cliente']
-                        : 'Pago general aplicado al folio',
+                    'descripcion' => $descripcionPago,
                     'monto'       => -1 * $monto, // Los pagos reducen saldo
                     'created_at'  => now(),
                     'updated_at'  => now(),
