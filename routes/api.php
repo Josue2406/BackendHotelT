@@ -358,11 +358,14 @@ use App\Http\Controllers\Api\folio\FolioPagosController;
 use App\Http\Controllers\Api\folio\FolioCerrarController;
 use App\Http\Controllers\Api\folio\FolioHistorialController;
 use App\Http\Controllers\Api\folio\FolioHistorialExportController;
+use App\Http\Controllers\Api\folio\FolioCargosController;
 
 Route::prefix('folios')->group(function () {
     Route::get('{idFolio}/resumen', [FolioResumenController::class, 'show']);
     Route::post('{folioId}/distribuir', [FolioDistribucionController::class, 'distribuir']);
     Route::post('{folioId}/pagos', [FolioPagosController::class, 'store']);
+    Route::get('{folioId}/cargos', [FolioCargosController::class, 'index']);
+    Route::post('{folioId}/cargos', [FolioCargosController::class, 'store']);
     Route::post('{idFolio}/cerrar', [FolioCerrarController::class, 'store']);
     Route::get('{idFolio}/historial', [FolioHistorialController::class, 'index']);
     Route::get('{idFolio}/historial/export', [FolioHistorialExportController::class, 'exportCsv']);
