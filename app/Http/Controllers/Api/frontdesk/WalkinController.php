@@ -9,6 +9,8 @@ use App\Models\habitacion\Habitacione;
 use App\Models\estadia\Estadia;
 use App\Models\check_in\AsignacionHabitacion;
 use App\Models\check_in\CheckIn;
+use App\Models\check_out\Folio;
+use App\Models\check_out\EstadoFolio;
 
 class WalkinController extends Controller
 {
@@ -45,6 +47,9 @@ class WalkinController extends Controller
         // 4) Crear todo en transacción
         return DB::transaction(function () use ($data, $cliente, $desde, $hasta) {
 
+            // 🔹 Generar código único para Walk-In (similar a reservas)
+            $codigoWalkIn = 'WI-' . now()->format('Ymd') . '-' . strtoupper(substr(uniqid(), -4));
+
             $estadia = Estadia::create([
                 'id_reserva'         => null, // Walk-in no viene de reserva
                 'id_cliente_titular' => $cliente->id_cliente,
@@ -62,7 +67,7 @@ class WalkinController extends Controller
                 'id_reserva'       => null,
                 'id_estadia'       => $estadia->id_estadia,
                 'origen'           => 'frontdesk',
-                'nombre'           => $data['nombre_asignacion'] ?? 'Walk-in',
+                'nombre'           => $data['nombre_asignacion'] ?? $codigoWalkIn, // Solo el código
                 'fecha_asignacion' => $desde,
                 'adultos'          => $data['adultos'] ?? null,
                 'ninos'            => $data['ninos']   ?? null,
@@ -72,14 +77,33 @@ class WalkinController extends Controller
             CheckIn::create([
                 'id_asignacion' => $asign->id_asignacion,
                 'fecha_hora'    => now(),
-                'obervacion'   => $data['observacion_checkin'] ?? null, // <-- corregido
+                'obervacion'   => $data['observacion_checkin'] ?? null,
             ]);
 
+            // 5️⃣ Crear Folio asociado (igual que en el check-in normal)
+            $folio = Folio::firstOrCreate(
+                [
+                    'id_estadia' => $estadia->id_estadia,
+                ],
+                [
+                    'id_estado_folio' => EstadoFolio::ABIERTO,
+                    'total'           => 0.0,
+                    'id_reserva_hab'  => null, // Walk-in no tiene reserva
+                ]
+            );
+
             return response()->json([
-                'cliente'    => $cliente->only(['id_cliente','nombre','apellidos','cedula','correo']),
-                'estadia'    => $estadia->fresh(),
-                'asignacion' => $asign->fresh(),
-                'checkin_at' => now()->toDateTimeString(),
+                'success'    => true,
+                'message'    => 'Walk-In registrado exitosamente',
+                'data'       => [
+                    'codigo_walkin' => $codigoWalkIn, // ✅ Código único para buscar
+                    'cliente'    => $cliente->only(['id_cliente','nombre','apellidos','cedula','correo']),
+                    'estadia'    => $estadia->fresh(),
+                    'estadia_id' => $estadia->id_estadia,
+                    'asignacion' => $asign->fresh(),
+                    'folio_id'   => $folio->id_folio, // ✅ Ahora incluye el folio_id
+                    'checkin_at' => now()->toDateTimeString(),
+                ],
             ], 201);
         });
     }
