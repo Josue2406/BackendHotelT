@@ -11,31 +11,65 @@ use Illuminate\Support\Facades\Mail;
 
 class ForgotPasswordController extends Controller
 {
+    // public function sendCode(Request $request)
+    // {
+    //     $request->validate(['email' => 'required|email']);
+
+    //     $user = User::where('email', $request->email)->first();
+    //     if (!$user) {
+    //         return response()->json(['message' => 'Correo no registrado'], 404);
+    //     }
+
+    //     // Generar código de 6 dígitos
+    //     $code = rand(100000, 999999);
+
+    //     PasswordResetCode::updateOrCreate(
+    //         ['email' => $request->email],
+    //         ['code' => $code, 'expires_at' => now()->addMinutes(10)]
+    //     );
+
+    //     // Enviar correo
+    //     Mail::send('mail.forgotPass.reset-code', ['code' => $code, 'user' => $user], function ($message) use ($user) {
+    //         $message->to($user->email)
+    //                 ->subject('Código para restablecer tu contraseña');
+    //     });
+
+    //     return response()->json(['message' => 'Código enviado al correo']);
+    // }
     public function sendCode(Request $request)
-    {
-        $request->validate(['email' => 'required|email']);
+{
+    $request->validate(['email' => 'required|email']);
 
-        $user = User::where('email', $request->email)->first();
-        if (!$user) {
-            return response()->json(['message' => 'Correo no registrado'], 404);
-        }
+    $user = User::where('email', $request->email)->first();
+    if (!$user) {
+        return response()->json(['message' => 'Correo no registrado'], 404);
+    }
 
-        // Generar código de 6 dígitos
-        $code = rand(100000, 999999);
+    $code = rand(100000, 999999);
 
-        PasswordResetCode::updateOrCreate(
-            ['email' => $request->email],
-            ['code' => $code, 'expires_at' => now()->addMinutes(10)]
-        );
+    PasswordResetCode::updateOrCreate(
+        ['email' => $request->email],
+        ['code' => $code, 'expires_at' => now()->addMinutes(10)]
+    );
 
-        // Enviar correo
+    try {
         Mail::send('mail.forgotPass.reset-code', ['code' => $code, 'user' => $user], function ($message) use ($user) {
             $message->to($user->email)
                     ->subject('Código para restablecer tu contraseña');
         });
 
         return response()->json(['message' => 'Código enviado al correo']);
+
+    } catch (\Exception $e) {
+
+        // IMPORTANTE: esto te dirá el error real que está ocurriendo en Render
+        return response()->json([
+            'message' => 'Error al enviar el correo',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
+
 
     public function resetPassword(Request $request)
     {
