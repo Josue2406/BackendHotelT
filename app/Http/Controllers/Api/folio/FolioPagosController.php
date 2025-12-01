@@ -98,9 +98,9 @@ class FolioPagosController extends Controller
                     'tipo'          => 'pago',
                     'total'         => $monto,
                     'payload'       => json_encode([
-                        'id_cliente' => $data['id_cliente'] ?? null,
-                        'metodo'     => $data['metodo']     ?? null,
-                        'nota'       => $data['nota']       ?? null,
+                        'id_cliente' => isset($data['id_cliente']) ? $data['id_cliente'] : null,
+                        'metodo'     => isset($data['metodo']) ? $data['metodo'] : null,
+                        'nota'       => isset($data['nota']) ? $data['nota'] : null,
                     ], JSON_UNESCAPED_UNICODE),
                     'created_at'    => now(),
                     'updated_at'    => now(),
@@ -109,9 +109,9 @@ class FolioPagosController extends Controller
                 // b) Insertar en transacción de pago
                 $pagoRow = [
                     'id_folio'   => $folioId,
-                    'id_cliente' => $data['id_cliente'] ?? null,
+                    'id_cliente' => isset($data['id_cliente']) ? $data['id_cliente'] : null,
                     'monto'      => $monto,
-                    'resultado'  => $data['resultado'] ?? 'aprobado',
+                    'resultado'  => isset($data['resultado']) ? $data['resultado'] : 'aprobado',
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
@@ -119,8 +119,8 @@ class FolioPagosController extends Controller
                 DB::table('transaccion_pago')->insert($pagoRow);
 
                 // c) Registrar línea contable en folio_linea
-                $metodoTexto = $data['metodo'] ?? 'Efectivo';
-                $descripcionPago = $data['id_cliente']
+                $metodoTexto = isset($data['metodo']) ? $data['metodo'] : 'Efectivo';
+                $descripcionPago = isset($data['id_cliente']) && $data['id_cliente']
                     ? "Pago ({$metodoTexto}) - Cliente #{$data['id_cliente']}"
                     : "Pago ({$metodoTexto}) - General";
                 
@@ -130,7 +130,7 @@ class FolioPagosController extends Controller
 
                 DB::table('folio_linea')->insert([
                     'id_folio'    => $folioId,
-                    'id_cliente'  => $data['id_cliente'] ?? null,
+                    'id_cliente'  => isset($data['id_cliente']) ? $data['id_cliente'] : null,
                     'descripcion' => $descripcionPago,
                     'monto'       => -1 * $monto, // Los pagos reducen saldo
                     'created_at'  => now(),

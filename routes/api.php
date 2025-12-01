@@ -282,8 +282,10 @@ Route::get('/frontdesk/estadia/{id}', [EstadiaController::class, 'show']);
 
 Route::prefix('frontdesk')->group(function () {
 
-
+      // Búsqueda de estadías
       Route::get('/estadia/by-reserva/{codigo}', [\App\Http\Controllers\Api\frontdesk\EstadiaController::class, 'showByReserva']);
+      Route::get('/estadia/walkin/{codigo}', [\App\Http\Controllers\Api\frontdesk\EstadiaController::class, 'showByWalkIn']);
+      
     // Walk-in
     Route::post('/walkin', [WalkInController::class, 'store']);
 
@@ -298,7 +300,7 @@ Route::prefix('frontdesk')->group(function () {
      Route::get('/estadia/{id}', [\App\Http\Controllers\Api\frontdesk\EstadiaController::class, 'show']);
 
     // ✅ Estadías (listado general)
-    Route::get('/estadias', [EstadiasController::class, 'index']);
+    Route::get('/estadias', [\App\Http\Controllers\Api\frontdesk\EstadiaController::class, 'index']);
 
     // ✅ Movimientos / Fechas / Checkout
     Route::post('/estadia/{estadia}/room-move', [EstadiasController::class, 'roomMove']);
