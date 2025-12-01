@@ -8,6 +8,9 @@ namespace App\Models\reserva;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\reserva\Temporada;
+//use App\Models\reserva\TiposHabitacion;
+use App\Models\habitacion\TiposHabitacion;
 
 /**
  * Class Tarifa

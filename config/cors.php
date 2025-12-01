@@ -20,9 +20,11 @@ return [
     'paths' => ['api/*', 'sanctum/csrf-cookie'],
     
     'allowed_methods' => ['*'],
-    
-    'allowed_origins' => explode(',', env('CORS_ALLOWED_ORIGINS', 'http://localhost:3000')),
-    
+
+    // Lee los orígenes permitidos desde .env
+    // IMPORTANTE: No se puede usar '*' con credentials:true
+    'allowed_origins' => ['https://lanaku-hotel.onrender.com', 'https://una-hotel-system.vercel.app'],
+
     'allowed_origins_patterns' => [],
     
     'allowed_headers' => ['*'],
