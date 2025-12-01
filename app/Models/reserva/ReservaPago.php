@@ -9,7 +9,13 @@ namespace App\Models\reserva;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-
+use App\Models\usuario\User;
+use App\Models\catalago_pago\EstadoPago;
+use App\Models\catalago_pago\MetodoPago;
+use App\Models\catalago_pago\TipoTransaccion;
+use App\Models\reserva\Reserva;
+use App\Models\reserva\CargoReserva;
+use App\Models\catalago_pago\TransaccionPago;
 /**
  * Class ReservaPago
  * 
